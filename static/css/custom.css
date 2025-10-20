@@ -1,0 +1,882 @@
+/* Custom styles for Calendar-Harvest Integration */
+
+:root {
+    --primary-color: #007bff;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --info-color: #17a2b8;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+}
+
+/* Modal Positioning - center with standard Bootstrap stacking */
+.modal {
+    z-index: 1055 !important; /* above backdrop 1050 */
+}
+
+.modal-dialog {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+    max-width: 90vw !important;
+    max-height: 90vh !important;
+}
+
+.modal-content {
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+}
+
+/* Bootstrap Alerts - follow normal stacking so modals appear above */
+.alert {
+    position: relative !important;
+    z-index: auto !important; /* allow modal (1055) to be above alerts */
+}
+
+/* Toast notifications - Center them */
+.toast-container {
+    position: fixed !important;
+    top: 20px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 1070 !important;
+}
+
+/* Flash messages container - Center them */
+.flash-messages-container {
+    position: fixed !important;
+    top: 80px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 1060 !important;
+    width: auto !important;
+    max-width: 90vw !important;
+}
+
+.flash-message {
+    position: relative !important;
+    margin-bottom: 10px !important;
+    min-width: 300px !important;
+    max-width: 600px !important;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    border-radius: 0.5rem !important;
+}
+
+/* Ensure modals appear above everything */
+.modal-backdrop {
+    z-index: 1050 !important;
+}
+
+/* JavaScript-generated alerts container */
+.js-alerts-container {
+    position: fixed !important;
+    top: 80px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 1045 !important; /* keep below modal (1055) and backdrop (1050) */
+    width: auto !important;
+    max-width: 90vw !important;
+    pointer-events: none !important; /* Allow clicks to pass through container */
+}
+
+.js-alert {
+    position: relative !important;
+    margin-bottom: 10px !important;
+    min-width: 300px !important;
+    max-width: 600px !important;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    border-radius: 0.5rem !important;
+    pointer-events: auto !important; /* Re-enable clicks on the alert itself */
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+    .flash-messages-container,
+    .js-alerts-container {
+        top: 70px !important;
+        left: 10px !important;
+        right: 10px !important;
+        transform: none !important;
+        max-width: none !important;
+        width: auto !important;
+    }
+
+    .flash-message,
+    .js-alert {
+        min-width: auto !important;
+        max-width: none !important;
+        width: 100% !important;
+    }
+
+    .modal-dialog {
+        top: 20px !important;
+        left: 10px !important;
+        right: 10px !important;
+        transform: none !important;
+        max-width: none !important;
+        width: auto !important;
+    }
+
+    /* Week selector responsive adjustments */
+    .week-nav {
+        flex-direction: column !important;
+        gap: 1rem !important;
+    }
+
+    .week-display-container {
+        margin: 0 !important;
+        order: -1;
+    }
+
+    .week-period {
+        font-size: 1rem !important;
+        padding: 0.5rem 1rem !important;
+    }
+
+    .week-dates {
+        font-size: 0.9rem !important;
+    }
+
+    .week-details {
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+    }
+
+    .week-prev, .week-next {
+        width: 100% !important;
+        justify-content: center !important;
+    }
+}
+
+/* General Layout */
+.main-content {
+    min-height: calc(100vh - 200px);
+}
+
+/* Cards */
+.setup-card {
+    border-left: 4px solid var(--primary-color);
+}
+
+.mapping-card {
+    border-left: 4px solid var(--success-color);
+}
+
+.process-card {
+    border-left: 4px solid var(--warning-color);
+}
+
+.status-card {
+    border-left: 4px solid var(--info-color);
+}
+
+/* Status Indicators */
+.status-connected {
+    color: var(--success-color);
+}
+
+.status-disconnected {
+    color: var(--danger-color);
+}
+
+.status-warning {
+    color: var(--warning-color);
+}
+
+/* Mapping Table */
+.mapping-table {
+    font-size: 0.9rem;
+}
+
+.mapping-table th {
+    background-color: var(--light-color);
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* Calendar Event Preview */
+.event-preview {
+    background-color: #f8f9fa;
+    border-left: 4px solid var(--info-color);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.375rem;
+    overflow: hidden; /* Prevent content overflow */
+}
+
+.event-preview .d-flex {
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.event-preview .text-end {
+    flex-shrink: 0; /* Prevent shrinking */
+    min-width: fit-content;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+}
+
+.event-preview .badge {
+    white-space: nowrap; /* Prevent badge text wrapping */
+    font-size: 0.75rem;
+}
+
+.event-time {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.event-duration {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* Timesheet Preview */
+.timesheet-preview {
+    background-color: #fff3cd;
+    border-left: 4px solid var(--warning-color);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.375rem;
+    overflow: hidden; /* Prevent content overflow */
+}
+
+.timesheet-preview .d-flex {
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.timesheet-preview .text-end {
+    flex-shrink: 0; /* Prevent shrinking */
+    min-width: fit-content;
+}
+
+.timesheet-preview .badge {
+    white-space: nowrap; /* Prevent badge text wrapping */
+}
+
+.timesheet-entry {
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.75rem 0;
+}
+
+.timesheet-entry:last-child {
+    border-bottom: none;
+}
+
+/* Processing Status */
+.processing-status {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    z-index: 1050;
+    min-width: 300px;
+    text-align: center;
+}
+
+.processing-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+}
+
+/* Form Enhancements */
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+    opacity: 0.65;
+    transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+}
+
+/* Button Enhancements */
+.btn-outline-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* Loading Spinner */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .main-content {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Animation Classes */
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Success/Error States */
+.success-state {
+    border-color: var(--success-color);
+    background-color: #d4edda;
+}
+
+.error-state {
+    border-color: var(--danger-color);
+    background-color: #f8d7da;
+}
+
+/* Week Selector */
+.week-selector {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+}
+
+.week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    gap: 1rem;
+}
+
+.week-prev, .week-next {
+    transition: all 0.2s ease;
+    border-radius: 0.5rem !important;
+    padding: 0.5rem 1rem !important;
+    font-weight: 500 !important;
+}
+
+.week-prev:hover, .week-next:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+}
+
+.week-prev:active, .week-next:active {
+    transform: translateY(0);
+}
+
+.week-display-container {
+    text-align: center;
+    flex: 1;
+    margin: 0 1rem;
+}
+
+.week-display {
+    margin-bottom: 0.5rem;
+    transition: opacity 0.3s ease;
+}
+
+.week-period {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, var(--primary-color), #0056b3);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.week-period::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.week-period:hover::before {
+    left: 100%;
+}
+
+.week-period i {
+    font-size: 1.2rem;
+}
+
+.week-dates {
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.5px;
+}
+
+.week-details {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--dark-color);
+    transition: opacity 0.3s ease;
+}
+
+.week-number {
+    background: var(--light-color);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 500;
+    border: 1px solid #dee2e6;
+}
+
+.week-month {
+    color: var(--dark-color);
+    font-weight: 500;
+}
+
+.week-days {
+    background: var(--info-color);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Enhanced week selector styling */
+.week-selector {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Auto-Suggestion Cards */
+.suggestion-card {
+    border: 1px solid #dee2e6;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.suggestion-card:hover {
+    border-color: var(--info-color);
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.suggestion-card .form-check-input:checked ~ .form-check-label {
+    color: var(--info-color);
+}
+
+.suggestion-card.selected {
+    border-color: var(--info-color);
+    background-color: #f8f9fa;
+}
+
+/* Confidence badges */
+.badge.bg-success {
+    background-color: var(--success-color) !important;
+}
+
+.badge.bg-warning {
+    background-color: var(--warning-color) !important;
+    color: #000;
+}
+
+.badge.bg-info {
+    background-color: var(--info-color) !important;
+}
+
+/* Suggestion animations */
+.suggestion-card {
+    animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Loading spinner animation */
+.spinner-border {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Calendar Labels Dropdown */
+.dropdown-menu {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.dropdown-item {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+.dropdown-header {
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.5rem 1rem 0.25rem;
+    margin-bottom: 0;
+}
+
+/* Calendar label search input */
+#calendar_label_search {
+    cursor: pointer;
+}
+
+#calendar_label_search:focus {
+    cursor: text;
+}
+
+/* Label type indicators */
+.label-type-indicator {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    margin-left: 0.5rem;
+}
+
+.label-type-exact {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.label-type-pattern {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.label-type-prefix {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* Label color dots */
+.label-color-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+/* Calendar label dots in dropdown */
+.calendar-label-dot {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    flex-shrink: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Calendar label badges for events */
+.calendar-label-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #212529;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.calendar-label-badge .calendar-label-dot {
+    width: 10px;
+    height: 10px;
+}
+
+/* Predefined label styling */
+.dropdown-item .label-color-dot + .ms-2 {
+    min-width: 0;
+}
+
+/* Responsive dropdown */
+@media (max-width: 768px) {
+    .dropdown-menu {
+        max-height: 250px;
+    }
+
+    .dropdown-item {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .label-color-dot {
+        width: 10px;
+        height: 10px;
+    }
+}
+
+/* Unmapped Events Styling */
+.unmapped-event {
+    background-color: #fff3cd;
+    border-color: #ffeaa7 !important;
+    transition: all 0.2s ease;
+}
+
+.unmapped-event:hover {
+    background-color: #fff2b3;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.unmapped-event .form-select {
+    border-color: #ffc107;
+}
+
+.unmapped-event .form-select:focus {
+    border-color: #ffb300;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+.unmapped-event .btn-primary {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #212529;
+}
+
+.unmapped-event .btn-primary:hover {
+    background-color: #ffb300;
+    border-color: #ffb300;
+    color: #212529;
+}
+
+.unmapped-event .btn-primary:disabled {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: #fff;
+}
+
+/* Recurring Mappings Styling */
+.recurring-mapping {
+    background-color: #f8f9fa;
+    border-color: #17a2b8 !important;
+    transition: all 0.2s ease;
+}
+
+.recurring-mapping:hover {
+    background-color: #e9ecef;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.recurring-mapping .mapping-details .badge {
+    font-size: 0.75em;
+}
+
+.recurring-mapping .btn-outline-primary {
+    border-color: #17a2b8;
+    color: #17a2b8;
+}
+
+.recurring-mapping .btn-outline-primary:hover {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+}
+
+/* Responsive adjustments for unmapped events */
+@media (max-width: 768px) {
+    .unmapped-event .row {
+        margin-bottom: 10px;
+    }
+
+    .unmapped-event .col-md-2,
+    .unmapped-event .col-md-4,
+    .unmapped-event .col-md-6 {
+        margin-bottom: 10px;
+    }
+
+    .recurring-mapping .col-md-4,
+    .recurring-mapping .col-md-8 {
+        margin-bottom: 15px;
+    }
+
+    .recurring-mapping .text-end {
+        text-align: left !important;
+    }
+}
+
+/* Calendar Label Color Classes - CSP Compliant */
+.label-finshape {
+    background-color: #7ae7bf !important;
+    color: #000000 !important;
+}
+
+.label-osobni {
+    background-color: #dbadff !important;
+    color: #000000 !important;
+}
+
+.label-grada {
+    background-color: #ff887c !important;
+    color: #000000 !important;
+}
+
+.label-csas-promise {
+    background-color: #fbd75b !important;
+    color: #000000 !important;
+}
+
+.label-ai {
+    background-color: #ffb878 !important;
+    color: #000000 !important;
+}
+
+.label-dp {
+    background-color: #e1e1e1 !important;
+    color: #000000 !important;
+}
+
+.label-csas-kalendar {
+    background-color: #5484ed !important;
+    color: #ffffff !important;
+}
+
+.label-sales {
+    background-color: #51b749 !important;
+    color: #ffffff !important;
+}
+
+.label-burinka {
+    background-color: #dc2127 !important;
+    color: #ffffff !important;
+}
+
+/* Default label color for unknown labels */
+.label-default {
+    background-color: #9fc6e7 !important;
+    color: #000000 !important;
+}
+
+/* Calendar label dot color classes - for dropdown dots */
+.calendar-label-dot.label-finshape {
+    background-color: #7ae7bf !important;
+}
+
+.calendar-label-dot.label-osobni {
+    background-color: #dbadff !important;
+}
+
+.calendar-label-dot.label-grada {
+    background-color: #ff887c !important;
+}
+
+.calendar-label-dot.label-csas-promise {
+    background-color: #fbd75b !important;
+}
+
+.calendar-label-dot.label-ai {
+    background-color: #ffb878 !important;
+}
+
+.calendar-label-dot.label-dp {
+    background-color: #e1e1e1 !important;
+}
+
+.calendar-label-dot.label-csas-kalendar {
+    background-color: #5484ed !important;
+}
+
+.calendar-label-dot.label-sales {
+    background-color: #51b749 !important;
+}
+
+.calendar-label-dot.label-burinka {
+    background-color: #dc2127 !important;
+}
+
+.calendar-label-dot.label-default {
+    background-color: #9fc6e7 !important;
+}
+
+/* CSP Compliant utility classes */
+.d-none-csp {
+    display: none !important;
+}
+
+.d-flex-csp {
+    display: flex !important;
+}
+
+/* Loading spinner animation - smooth spinning without bouncing */
+.spin {
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+    transform-origin: center;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Smooth fade animation without scaling to prevent bouncing */
+.loading-pulse {
+    animation: fade-pulse 2s ease-in-out infinite;
+}
+
+@keyframes fade-pulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+}

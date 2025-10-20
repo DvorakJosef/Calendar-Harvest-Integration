@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Calendar to Harvest Integration{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="bi bi-speedometer2"></i>
+            Dashboard
+        </h1>
+        
+        <p class="lead text-muted mb-5">
+            Welcome to the Calendar to Harvest integration tool. This application helps you automatically 
+            populate your Harvest timesheets based on your Google Calendar events.
+        </p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Setup Card -->
+    <div class="col-md-4">
+        <div class="card h-100 setup-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-gear"></i>
+                    1. Setup APIs
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Configure your Google Calendar and Harvest API credentials to get started.
+                </p>
+                <div class="mb-3">
+                    <span class="badge bg-secondary status-badge" id="google-status">
+                        <i class="bi bi-circle"></i> Google Calendar: Not Connected
+                    </span>
+                </div>
+                <div class="mb-3">
+                    <span class="badge bg-secondary status-badge" id="harvest-status">
+                        <i class="bi bi-circle"></i> Harvest: Not Connected
+                    </span>
+                </div>
+                <a href="{{ url_for('setup') }}" class="btn btn-primary">
+                    <i class="bi bi-arrow-right"></i>
+                    Go to Setup
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mappings Card -->
+    <div class="col-md-4">
+        <div class="card h-100 mapping-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-diagram-3"></i>
+                    2. Configure Mappings
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Map your calendar event labels to specific Harvest projects and tasks.
+                </p>
+                <div class="mb-3">
+                    <span class="badge bg-secondary status-badge" id="mappings-count">
+                        <i class="bi bi-list"></i> 0 Mappings Configured
+                    </span>
+                </div>
+                <a href="{{ url_for('mappings') }}" class="btn btn-success">
+                    <i class="bi bi-arrow-right"></i>
+                    Manage Mappings
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Process Card -->
+    <div class="col-md-4">
+        <div class="card h-100 process-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-play-circle"></i>
+                    3. Process Timesheets
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Select a week and automatically populate your Harvest timesheets from calendar events.
+                </p>
+                <div class="mb-3">
+                    <span class="badge bg-secondary status-badge" id="last-processed">
+                        <i class="bi bi-clock"></i> Never Processed
+                    </span>
+                </div>
+                <a href="{{ url_for('process') }}" class="btn btn-warning">
+                    <i class="bi bi-arrow-right"></i>
+                    Start Processing
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How it Works Section -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-info-circle"></i>
+                    How It Works
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-1-circle text-primary"></i> Connect Your Accounts</h6>
+                        <p class="text-muted">
+                            Authenticate with Google Calendar to read your events and connect to Harvest 
+                            using your Personal Access Token.
+                        </p>
+                        
+                        <h6><i class="bi bi-2-circle text-success"></i> Map Events to Projects</h6>
+                        <p class="text-muted">
+                            Create mappings between calendar event titles/labels and your Harvest 
+                            projects and tasks.
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-3-circle text-warning"></i> Process Timesheets</h6>
+                        <p class="text-muted">
+                            Select a week, preview the proposed timesheet entries, and automatically 
+                            populate your Harvest timesheets.
+                        </p>
+                        
+                        <h6><i class="bi bi-shield-check text-info"></i> Safety Features</h6>
+                        <p class="text-muted">
+                            The app prevents overwriting existing timesheet entries and provides 
+                            detailed previews before making any changes.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Check API connection status on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkApiStatus();
+    loadDashboardStats();
+});
+
+function checkApiStatus() {
+    // Check Google Calendar status
+    fetch('/api/google/status')
+        .then(response => response.json())
+        .then(data => {
+            const googleStatus = document.getElementById('google-status');
+            if (data.connected) {
+                googleStatus.innerHTML = '<i class="bi bi-check-circle"></i> Google Calendar: Connected';
+                googleStatus.className = 'badge bg-success status-badge';
+            } else {
+                googleStatus.innerHTML = '<i class="bi bi-x-circle"></i> Google Calendar: Not Connected';
+                googleStatus.className = 'badge bg-secondary status-badge';
+            }
+        })
+        .catch(error => console.error('Error checking Google status:', error));
+
+    // Check Harvest status
+    fetch('/api/harvest/status')
+        .then(response => response.json())
+        .then(data => {
+            const harvestStatus = document.getElementById('harvest-status');
+            if (data.connected) {
+                harvestStatus.innerHTML = '<i class="bi bi-check-circle"></i> Harvest: Connected';
+                harvestStatus.className = 'badge bg-success status-badge';
+            } else {
+                harvestStatus.innerHTML = '<i class="bi bi-x-circle"></i> Harvest: Not Connected';
+                harvestStatus.className = 'badge bg-secondary status-badge';
+            }
+        })
+        .catch(error => console.error('Error checking Harvest status:', error));
+}
+
+function loadDashboardStats() {
+    fetch('/api/dashboard/stats')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update mappings count
+                const mappingsCount = document.getElementById('mappings-count');
+                if (data.mappings_count > 0) {
+                    mappingsCount.innerHTML = `<i class="bi bi-check-circle"></i> ${data.mappings_count} Mappings Configured`;
+                    mappingsCount.className = 'badge bg-success status-badge';
+                } else {
+                    mappingsCount.innerHTML = '<i class="bi bi-list"></i> 0 Mappings Configured';
+                    mappingsCount.className = 'badge bg-secondary status-badge';
+                }
+
+                // Update last processed date
+                const lastProcessed = document.getElementById('last-processed');
+                if (data.last_processed_date) {
+                    lastProcessed.innerHTML = `<i class="bi bi-check-circle"></i> Last: ${data.last_processed_date}`;
+                    lastProcessed.className = 'badge bg-success status-badge';
+                } else {
+                    lastProcessed.innerHTML = '<i class="bi bi-clock"></i> Never Processed';
+                    lastProcessed.className = 'badge bg-secondary status-badge';
+                }
+            } else {
+                console.error('Dashboard stats error:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading dashboard stats:', error);
+            // If user is not logged in, don't show error
+            if (error.message && error.message.includes('401')) {
+                console.log('User not logged in, skipping dashboard stats');
+            }
+        });
+}
+</script>
+{% endblock %}

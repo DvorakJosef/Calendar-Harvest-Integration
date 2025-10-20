@@ -1,0 +1,1012 @@
+{% extends "base.html" %}
+
+{% block title %}Setup - Calendar to Harvest Integration{% endblock %}
+
+{% block extra_css %}
+<link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
+<style>
+.wizard-step {
+    display: none;
+}
+.wizard-step.active {
+    display: block;
+}
+.wizard-progress {
+    height: 4px;
+    background-color: #e9ecef;
+    border-radius: 2px;
+    overflow: hidden;
+}
+.wizard-progress-bar {
+    height: 100%;
+    background-color: #0d6efd;
+    transition: width 0.3s ease;
+}
+.suggestion-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+.suggestion-card:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.suggestion-card.selected {
+    border-color: #0d6efd;
+    background-color: #f8f9ff;
+}
+.wizard-section {
+    border-left: 4px solid #17a2b8;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="bi bi-gear"></i>
+            Setup
+        </h1>
+        <p class="lead text-muted mb-5">
+            Configure your Google Calendar and Harvest API connections to get started.
+        </p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Google Calendar Setup -->
+    <div class="col-lg-6">
+        <div class="card setup-card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-google"></i>
+                    Google Calendar
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-secondary status-badge me-2" id="google-connection-status">
+                            <i class="bi bi-circle"></i> Checking...
+                        </span>
+                        <button class="btn btn-sm btn-outline-primary" onclick="checkGoogleStatus()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="google-not-connected" style="display: none;">
+                    <p class="text-muted mb-3">
+                        Connect your Google Calendar to read calendar events. This uses OAuth 2.0 
+                        for secure authentication.
+                    </p>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Required Permissions:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Read your calendar events</li>
+                            <li>Access basic profile information</li>
+                        </ul>
+                    </div>
+                    
+                    <a href="{{ url_for('google_auth') }}" class="btn btn-primary">
+                        <i class="bi bi-google"></i>
+                        Connect Google Calendar
+                    </a>
+                </div>
+                
+                <div id="google-connected" style="display: none;">
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle"></i>
+                        Google Calendar is connected successfully!
+                    </div>
+
+                    <div id="google-user-info" class="mb-3">
+                        <!-- User info will be populated here -->
+                    </div>
+
+                    <button class="btn btn-outline-danger" onclick="disconnectGoogle()">
+                        <i class="bi bi-x-circle"></i>
+                        Disconnect
+                    </button>
+                </div>
+
+                <div id="google-needs-refresh" style="display: none;">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Google Calendar needs re-authorization</strong><br>
+                        Your Google Calendar is connected but missing permissions for long-term access.
+                        Please disconnect and reconnect to grant full permissions.
+                    </div>
+
+                    <div id="google-user-info-refresh" class="mb-3">
+                        <!-- User info will be populated here -->
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-warning" onclick="disconnectAndReconnectGoogle()">
+                            <i class="bi bi-arrow-repeat"></i>
+                            Disconnect & Reconnect
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="disconnectGoogle()">
+                            <i class="bi bi-x-circle"></i>
+                            Just Disconnect
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Harvest Setup -->
+    <div class="col-lg-6">
+        <div class="card setup-card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-stopwatch"></i>
+                    Harvest
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-secondary status-badge me-2" id="harvest-connection-status">
+                            <i class="bi bi-circle"></i> Checking...
+                        </span>
+                        <button class="btn btn-sm btn-outline-primary" onclick="checkHarvestStatus()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="harvest-not-connected">
+                    <!-- OAuth 2.0 Authentication -->
+                    <div class="mb-4">
+                        <h6 class="text-success">
+                            <i class="bi bi-shield-check"></i>
+                            Secure OAuth Authentication
+                        </h6>
+                        <p class="text-muted mb-3">
+                            Connect securely with your individual Harvest account.
+                        </p>
+
+                        <button type="button" class="btn btn-success" onclick="connectHarvestOAuth()">
+                            <i class="bi bi-shield-lock"></i>
+                            Connect with Harvest OAuth
+                        </button>
+
+                        <div class="alert alert-success mt-3">
+                            <i class="bi bi-check-circle"></i>
+                            <strong>Benefits:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Individual authentication (no shared credentials)</li>
+                                <li>Built-in security and user isolation</li>
+                                <li>Revocable access from your Harvest account</li>
+                                <li>Complete audit trail</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="harvest-connected" style="display: none;">
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle"></i>
+                        Harvest is connected successfully!
+                    </div>
+                    
+                    <div id="harvest-user-info" class="mb-3">
+                        <!-- User info will be populated here -->
+                    </div>
+                    
+                    <button class="btn btn-outline-danger" onclick="disconnectHarvest()">
+                        <i class="bi bi-x-circle"></i>
+                        Disconnect
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Setup Instructions -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-question-circle"></i>
+                    Setup Instructions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-google text-primary"></i> Google Calendar Setup</h6>
+                        <ol class="text-muted">
+                            <li>Click "Connect Google Calendar" above</li>
+                            <li>Sign in to your Google account</li>
+                            <li>Grant permission to read your calendar</li>
+                            <li>You'll be redirected back here automatically</li>
+                        </ol>
+                        
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Note:</strong> This app only reads your calendar events. 
+                            It cannot modify or delete your calendar data.
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-stopwatch text-success"></i> Harvest Setup</h6>
+                        <ol class="text-muted">
+                            <li>Click "Connect with OAuth" above</li>
+                            <li>Log in to your Harvest account</li>
+                            <li>Authorize the application</li>
+                            <li>You'll be redirected back automatically</li>
+                        </ol>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Security:</strong> OAuth provides secure access without sharing your password.
+                            You can revoke access anytime from your Harvest account settings.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Next Steps -->
+<div class="row mt-4" id="next-steps" style="display: none;">
+    <div class="col-12">
+        <div class="alert alert-success">
+            <h5 class="alert-heading">
+                <i class="bi bi-check-circle"></i>
+                Setup Complete!
+            </h5>
+            <p class="mb-3">
+                Both Google Calendar and Harvest are now connected. You can proceed to configure 
+                project mappings and start processing your timesheets.
+            </p>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('mappings') }}" class="btn btn-success">
+                    <i class="bi bi-arrow-right"></i>
+                    Configure Mappings
+                </a>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-house"></i>
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Setup Wizard Section -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card wizard-section">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-magic"></i>
+                        Setup Wizard
+                    </h5>
+                    <button class="btn btn-sm btn-outline-primary" id="toggle-wizard" onclick="toggleWizard()">
+                        <i class="bi bi-chevron-down" id="wizard-toggle-icon"></i>
+                        <span id="wizard-toggle-text">Show Wizard</span>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body" id="wizard-content" style="display: none;">
+                <p class="text-muted mb-4">
+                    Let our guided wizard analyze your calendar and automatically suggest project mappings.
+                    This is the fastest way to get started if you have existing calendar events.
+                </p>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>What the wizard does:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Analyzes your recent calendar events</li>
+                        <li>Detects patterns and suggests project mappings</li>
+                        <li>Automatically creates mappings for your approval</li>
+                        <li>Gets you processing events in minutes</li>
+                    </ul>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary" onclick="startWizard()" id="start-wizard-btn">
+                        <i class="bi bi-magic"></i>
+                        Start Setup Wizard
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="toggleWizard()">
+                        <i class="bi bi-x"></i>
+                        Manual Setup Instead
+                    </button>
+                </div>
+
+                <!-- Wizard Steps Container -->
+                <div id="wizard-steps-container" style="display: none;">
+                    <hr class="my-4">
+                    <div id="wizard-steps">
+                        <!-- Wizard steps will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Setup page specific JavaScript
+let wizardActive = false;
+let currentStep = 1;
+let analysisData = null;
+let selectedSuggestions = [];
+let harvestProjects = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    checkConnectionStatus();
+    loadHarvestProjects();
+});
+
+// Wizard functionality
+function toggleWizard() {
+    const content = document.getElementById('wizard-content');
+    const icon = document.getElementById('wizard-toggle-icon');
+    const text = document.getElementById('wizard-toggle-text');
+
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.className = 'bi bi-chevron-up';
+        text.textContent = 'Hide Wizard';
+        wizardActive = true;
+    } else {
+        content.style.display = 'none';
+        icon.className = 'bi bi-chevron-down';
+        text.textContent = 'Show Wizard';
+        wizardActive = false;
+        // Reset wizard if hiding
+        resetWizard();
+    }
+}
+
+function resetWizard() {
+    document.getElementById('wizard-steps-container').style.display = 'none';
+    document.getElementById('start-wizard-btn').style.display = 'inline-block';
+    currentStep = 1;
+    analysisData = null;
+    selectedSuggestions = [];
+}
+
+function loadHarvestProjects() {
+    fetch('/api/harvest/projects')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                harvestProjects = data.projects || [];
+            }
+        })
+        .catch(error => {
+            console.error('Error loading projects:', error);
+        });
+}
+
+function startWizard() {
+    // Check if both APIs are connected
+    Promise.all([
+        fetch('/api/google/status').then(r => r.json()),
+        fetch('/api/harvest/status').then(r => r.json())
+    ]).then(([googleStatus, harvestStatus]) => {
+        if (!googleStatus.connected) {
+            CalendarHarvestApp.showError('Please connect Google Calendar first');
+            return;
+        }
+        if (!harvestStatus.connected) {
+            CalendarHarvestApp.showError('Please connect Harvest first');
+            return;
+        }
+
+        // Both connected, start wizard
+        document.getElementById('start-wizard-btn').style.display = 'none';
+        document.getElementById('wizard-steps-container').style.display = 'block';
+        loadWizardSteps();
+        startAnalysis();
+    }).catch(error => {
+        console.error('Error checking API status:', error);
+        CalendarHarvestApp.showError('Failed to check API connections');
+    });
+}
+
+function loadWizardSteps() {
+    const container = document.getElementById('wizard-steps');
+    container.innerHTML = `
+        <div class="wizard-progress mb-4">
+            <div class="wizard-progress-bar" id="wizard-progress" style="width: 25%"></div>
+        </div>
+
+        <div class="wizard-step active" id="step-1">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-calendar-event"></i>
+                        Step 1: Calendar Analysis
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    <div id="analysis-loading" class="py-4">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Analyzing...</span>
+                        </div>
+                        <h6>Analyzing Your Calendar</h6>
+                        <p class="text-muted">
+                            Scanning recent events to detect patterns...
+                        </p>
+                    </div>
+
+                    <div id="analysis-results" style="display: none;">
+                        <div class="row text-center mb-3">
+                            <div class="col-4">
+                                <h5 class="text-primary" id="total-events">0</h5>
+                                <small class="text-muted">Events</small>
+                            </div>
+                            <div class="col-4">
+                                <h5 class="text-success" id="patterns-found">0</h5>
+                                <small class="text-muted">Patterns</small>
+                            </div>
+                            <div class="col-4">
+                                <h5 class="text-info" id="suggestions-count">0</h5>
+                                <small class="text-muted">Suggestions</small>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i>
+                            Analysis complete! Found patterns for automatic mapping.
+                        </div>
+
+                        <button class="btn btn-primary" onclick="nextWizardStep()">
+                            Review Suggestions
+                            <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+
+                    <div id="analysis-error" style="display: none;">
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <span id="error-message">Failed to analyze calendar</span>
+                        </div>
+                        <button class="btn btn-outline-primary" onclick="startAnalysis()">
+                            <i class="bi bi-arrow-clockwise"></i>
+                            Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="wizard-step" id="step-2">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-lightbulb"></i>
+                        Step 2: Review Suggestions
+                    </h6>
+                    <div>
+                        <button class="btn btn-outline-success btn-sm" onclick="selectAllSuggestions()">
+                            <i class="bi bi-check-all"></i> Select All
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="suggestions-container">
+                        <!-- Suggestions will be populated here -->
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-3">
+                        <button class="btn btn-outline-secondary" onclick="previousWizardStep()">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </button>
+                        <button class="btn btn-primary" onclick="nextWizardStep()">
+                            Configure Selected <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="wizard-step" id="step-3">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-gear"></i>
+                        Step 3: Configure Mappings
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="configuration-container">
+                        <!-- Configuration forms will be populated here -->
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-3">
+                        <button class="btn btn-outline-secondary" onclick="previousWizardStep()">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </button>
+                        <button class="btn btn-success" onclick="createMappings()">
+                            <i class="bi bi-check-circle"></i> Create Mappings
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="wizard-step" id="step-4">
+            <div class="card">
+                <div class="card-body text-center py-4">
+                    <div class="mb-3">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="mb-3">Setup Complete!</h5>
+                    <p class="text-muted mb-3">
+                        Your mappings have been created. You can now process calendar events.
+                    </p>
+
+                    <div id="completion-summary" class="alert alert-info mb-3">
+                        <!-- Summary will be populated here -->
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="/process" class="btn btn-primary">
+                            <i class="bi bi-play-circle"></i> Start Processing
+                        </a>
+                        <a href="/mappings" class="btn btn-outline-secondary">
+                            <i class="bi bi-gear"></i> Manage Mappings
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// OAuth 2.0 Functions
+function connectHarvestOAuth() {
+    // Redirect to OAuth authorization endpoint
+    window.location.href = '/auth/harvest';
+}
+
+
+
+function checkConnectionStatus() {
+    checkGoogleStatus();
+    checkHarvestStatus();
+}
+
+function checkGoogleStatus() {
+    const statusElement = document.getElementById('google-connection-status');
+    statusElement.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Checking...';
+    
+    fetch('/api/google/status')
+        .then(response => response.json())
+        .then(data => {
+            updateGoogleUI(data.connected, data.user_info, data.needs_refresh);
+        })
+        .catch(error => {
+            console.error('Error checking Google status:', error);
+            updateGoogleUI(false);
+        });
+}
+
+function checkHarvestStatus() {
+    const statusElement = document.getElementById('harvest-connection-status');
+    statusElement.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Checking...';
+
+    // Check both regular status and OAuth status
+    Promise.all([
+        fetch('/api/harvest/status').then(r => r.json()),
+        fetch('/api/harvest/oauth/status').then(r => r.json())
+    ]).then(([harvestStatus, oauthStatus]) => {
+        updateHarvestUI(harvestStatus.connected, harvestStatus.user_info, oauthStatus);
+    }).catch(error => {
+        console.error('Error checking Harvest status:', error);
+        updateHarvestUI(false);
+    });
+}
+
+function updateGoogleUI(isConnected, userInfo = null, needsRefresh = false) {
+    const statusElement = document.getElementById('google-connection-status');
+    const connectedDiv = document.getElementById('google-connected');
+    const notConnectedDiv = document.getElementById('google-not-connected');
+    const needsRefreshDiv = document.getElementById('google-needs-refresh');
+
+    // Hide all divs first
+    connectedDiv.style.display = 'none';
+    notConnectedDiv.style.display = 'none';
+    needsRefreshDiv.style.display = 'none';
+
+    if (isConnected && needsRefresh) {
+        // Connected but needs refresh token
+        statusElement.className = 'badge bg-warning status-badge me-2';
+        statusElement.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Needs Re-auth';
+        needsRefreshDiv.style.display = 'block';
+
+        if (userInfo) {
+            document.getElementById('google-user-info-refresh').innerHTML = `
+                <small class="text-muted">
+                    <i class="bi bi-person"></i> ${userInfo.email}
+                </small>
+            `;
+        }
+    } else if (isConnected) {
+        // Fully connected
+        statusElement.className = 'badge bg-success status-badge me-2';
+        statusElement.innerHTML = '<i class="bi bi-check-circle"></i> Connected';
+        connectedDiv.style.display = 'block';
+
+        if (userInfo) {
+            document.getElementById('google-user-info').innerHTML = `
+                <small class="text-muted">
+                    <i class="bi bi-person"></i> ${userInfo.email}
+                </small>
+            `;
+        }
+    } else {
+        // Not connected
+        statusElement.className = 'badge bg-secondary status-badge me-2';
+        statusElement.innerHTML = '<i class="bi bi-circle"></i> Not Connected';
+        notConnectedDiv.style.display = 'block';
+    }
+
+    checkIfSetupComplete();
+}
+
+function updateHarvestUI(isConnected, userInfo = null, oauthStatus = null) {
+    const statusElement = document.getElementById('harvest-connection-status');
+    const connectedDiv = document.getElementById('harvest-connected');
+    const notConnectedDiv = document.getElementById('harvest-not-connected');
+
+    if (isConnected) {
+        statusElement.className = 'badge bg-success status-badge me-2';
+        statusElement.innerHTML = '<i class="bi bi-check-circle"></i> Connected';
+        connectedDiv.style.display = 'block';
+        notConnectedDiv.style.display = 'none';
+
+        // Show OAuth connection info
+        let userInfoHtml = '';
+        if (oauthStatus && oauthStatus.oauth_configured) {
+            userInfoHtml = `
+                <div class="mb-2">
+                    <span class="badge bg-success me-2">
+                        <i class="bi bi-shield-check"></i> OAuth 2.0
+                    </span>
+                    <small class="text-muted">Secure authentication</small>
+                </div>
+                <small class="text-muted">
+                    <i class="bi bi-person"></i> ${oauthStatus.harvest_user_email}<br>
+                    <i class="bi bi-building"></i> ${oauthStatus.harvest_account_name}
+                </small>
+            `;
+        }
+
+        document.getElementById('harvest-user-info').innerHTML = userInfoHtml;
+    } else {
+        statusElement.className = 'badge bg-secondary status-badge me-2';
+        statusElement.innerHTML = '<i class="bi bi-circle"></i> Not Connected';
+        connectedDiv.style.display = 'none';
+        notConnectedDiv.style.display = 'block';
+    }
+
+    checkIfSetupComplete();
+}
+
+function checkIfSetupComplete() {
+    const googleConnected = document.getElementById('google-connected').style.display !== 'none';
+    const harvestConnected = document.getElementById('harvest-connected').style.display !== 'none';
+    const googleNeedsRefresh = document.getElementById('google-needs-refresh').style.display !== 'none';
+
+    const nextSteps = document.getElementById('next-steps');
+    // Only show next steps if Google is fully connected (not needing refresh) and Harvest is connected
+    if (googleConnected && !googleNeedsRefresh && harvestConnected) {
+        nextSteps.style.display = 'block';
+    } else {
+        nextSteps.style.display = 'none';
+    }
+}
+
+function disconnectGoogle() {
+    if (confirm('Are you sure you want to disconnect Google Calendar?')) {
+        fetch('/api/google/disconnect', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    checkGoogleStatus();
+                    CalendarHarvestApp.showSuccess('Google Calendar disconnected');
+                } else {
+                    CalendarHarvestApp.showError('Failed to disconnect Google Calendar');
+                }
+            })
+            .catch(error => {
+                console.error('Error disconnecting Google:', error);
+                CalendarHarvestApp.showError('Failed to disconnect Google Calendar');
+            });
+    }
+}
+
+function disconnectAndReconnectGoogle() {
+    if (confirm('This will disconnect and immediately redirect you to reconnect Google Calendar with full permissions. Continue?')) {
+        fetch('/api/google/disconnect', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    CalendarHarvestApp.showSuccess('Disconnected. Redirecting to reconnect...');
+                    // Wait a moment then redirect to auth
+                    setTimeout(() => {
+                        window.location.href = '/api/google/auth';
+                    }, 1000);
+                } else {
+                    CalendarHarvestApp.showError('Failed to disconnect Google Calendar');
+                }
+            })
+            .catch(error => {
+                console.error('Error disconnecting Google:', error);
+                CalendarHarvestApp.showError('Failed to disconnect Google Calendar');
+            });
+    }
+}
+
+function disconnectHarvest() {
+    if (confirm('Are you sure you want to disconnect Harvest?')) {
+        fetch('/api/harvest/disconnect', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    checkHarvestStatus();
+                    CalendarHarvestApp.showSuccess('Harvest disconnected');
+                } else {
+                    CalendarHarvestApp.showError('Failed to disconnect Harvest');
+                }
+            })
+            .catch(error => {
+                console.error('Error disconnecting Harvest:', error);
+                CalendarHarvestApp.showError('Failed to disconnect Harvest');
+            });
+    }
+}
+
+// Wizard step functions
+function startAnalysis() {
+    document.getElementById('analysis-loading').style.display = 'block';
+    document.getElementById('analysis-results').style.display = 'none';
+    document.getElementById('analysis-error').style.display = 'none';
+
+    fetch('/api/setup-wizard/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weeks_to_analyze: 8 })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            analysisData = data;
+            displayAnalysisResults(data);
+        } else {
+            showAnalysisError(data.error || 'Analysis failed');
+        }
+    })
+    .catch(error => {
+        console.error('Error during analysis:', error);
+        showAnalysisError('Network error during analysis');
+    });
+}
+
+function displayAnalysisResults(data) {
+    document.getElementById('analysis-loading').style.display = 'none';
+    document.getElementById('analysis-results').style.display = 'block';
+
+    document.getElementById('total-events').textContent = data.total_events || 0;
+    document.getElementById('patterns-found').textContent = Object.keys(data.patterns?.companies || {}).length;
+    document.getElementById('suggestions-count').textContent = data.suggestions?.length || 0;
+}
+
+function showAnalysisError(message) {
+    document.getElementById('analysis-loading').style.display = 'none';
+    document.getElementById('analysis-error').style.display = 'block';
+    document.getElementById('error-message').textContent = message;
+}
+
+function nextWizardStep() {
+    if (currentStep === 1) {
+        displaySuggestions();
+    } else if (currentStep === 2) {
+        displayConfiguration();
+    }
+
+    currentStep++;
+    updateWizardDisplay();
+}
+
+function previousWizardStep() {
+    currentStep--;
+    updateWizardDisplay();
+}
+
+function updateWizardDisplay() {
+    // Hide all steps
+    document.querySelectorAll('.wizard-step').forEach(step => {
+        step.classList.remove('active');
+    });
+
+    // Show current step
+    document.getElementById(`step-${currentStep}`).classList.add('active');
+
+    // Update progress bar
+    const progress = (currentStep / 4) * 100;
+    document.getElementById('wizard-progress').style.width = `${progress}%`;
+}
+
+function displaySuggestions() {
+    const container = document.getElementById('suggestions-container');
+    container.innerHTML = '';
+
+    if (!analysisData?.suggestions?.length) {
+        container.innerHTML = `
+            <div class="text-center py-3">
+                <i class="bi bi-info-circle text-muted" style="font-size: 2rem;"></i>
+                <h6 class="mt-2 text-muted">No Automatic Suggestions</h6>
+                <p class="text-muted">No clear patterns found for automatic mapping.</p>
+            </div>
+        `;
+        return;
+    }
+
+    analysisData.suggestions.forEach((suggestion, index) => {
+        const suggestionDiv = document.createElement('div');
+        suggestionDiv.className = 'suggestion-card p-3 mb-2';
+        suggestionDiv.innerHTML = `
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="suggestion-${index}" onchange="toggleSuggestion(${index})">
+                <label class="form-check-label w-100" for="suggestion-${index}">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="mb-1">${suggestion.calendar_label}</h6>
+                            <p class="text-muted mb-1 small">${suggestion.reason}</p>
+                            <span class="badge bg-primary me-1">${suggestion.suggested_project.name}</span>
+                            <span class="badge bg-secondary">Confidence: ${Math.round(suggestion.confidence * 100)}%</span>
+                        </div>
+                    </div>
+                </label>
+            </div>
+        `;
+        container.appendChild(suggestionDiv);
+    });
+}
+
+function toggleSuggestion(index) {
+    const checkbox = document.getElementById(`suggestion-${index}`);
+    const card = checkbox.closest('.suggestion-card');
+
+    if (checkbox.checked) {
+        card.classList.add('selected');
+        if (!selectedSuggestions.includes(index)) {
+            selectedSuggestions.push(index);
+        }
+    } else {
+        card.classList.remove('selected');
+        selectedSuggestions = selectedSuggestions.filter(i => i !== index);
+    }
+}
+
+function selectAllSuggestions() {
+    analysisData.suggestions.forEach((_, index) => {
+        const checkbox = document.getElementById(`suggestion-${index}`);
+        checkbox.checked = true;
+        toggleSuggestion(index);
+    });
+}
+
+function displayConfiguration() {
+    const container = document.getElementById('configuration-container');
+    container.innerHTML = '';
+
+    selectedSuggestions.forEach(index => {
+        const suggestion = analysisData.suggestions[index];
+        const configDiv = document.createElement('div');
+        configDiv.className = 'border rounded p-3 mb-3';
+        configDiv.innerHTML = `
+            <h6>${suggestion.calendar_label}</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Project</label>
+                    <input type="text" class="form-control" value="${suggestion.suggested_project.name}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Task</label>
+                    <select class="form-select" id="task-select-${index}" required>
+                        <option value="">Select Task...</option>
+                    </select>
+                </div>
+            </div>
+        `;
+        container.appendChild(configDiv);
+
+        // Load tasks for this project
+        loadTasksForProject(suggestion.suggested_project.id, index);
+    });
+}
+
+function loadTasksForProject(projectId, suggestionIndex) {
+    fetch(`/api/harvest/projects/${projectId}/tasks`)
+        .then(response => response.json())
+        .then(data => {
+            const taskSelect = document.getElementById(`task-select-${suggestionIndex}`);
+            data.tasks.forEach(task => {
+                const option = document.createElement('option');
+                option.value = task.id;
+                option.textContent = task.name;
+                option.dataset.taskName = task.name;
+                taskSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading tasks:', error);
+        });
+}
+
+function createMappings() {
+    const mappingsToCreate = [];
+
+    selectedSuggestions.forEach(index => {
+        const suggestion = analysisData.suggestions[index];
+        const taskSelect = document.getElementById(`task-select-${index}`);
+
+        if (taskSelect.value) {
+            mappingsToCreate.push({
+                ...suggestion,
+                approved: true,
+                selected_task_id: parseInt(taskSelect.value),
+                selected_task_name: taskSelect.options[taskSelect.selectedIndex].dataset.taskName
+            });
+        }
+    });
+
+    if (mappingsToCreate.length === 0) {
+        CalendarHarvestApp.showError('Please select tasks for all mappings');
+        return;
+    }
+
+    fetch('/api/setup-wizard/create-mappings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ suggestions: mappingsToCreate })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayCompletion(data.results);
+            nextWizardStep();
+        } else {
+            CalendarHarvestApp.showError(data.error || 'Failed to create mappings');
+        }
+    })
+    .catch(error => {
+        console.error('Error creating mappings:', error);
+        CalendarHarvestApp.showError('Failed to create mappings');
+    });
+}
+
+function displayCompletion(results) {
+    const summaryDiv = document.getElementById('completion-summary');
+    summaryDiv.innerHTML = `
+        <strong>Setup Summary:</strong><br>
+        ${results.created} mapping${results.created !== 1 ? 's' : ''} created successfully
+        ${results.failed > 0 ? `<br>${results.failed} mapping${results.failed !== 1 ? 's' : ''} failed` : ''}
+    `;
+}
+</script>
+{% endblock %}

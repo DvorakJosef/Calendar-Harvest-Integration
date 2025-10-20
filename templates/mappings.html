@@ -1,0 +1,1377 @@
+{% extends "base.html" %}
+
+{% block title %}Project Mappings - Calendar to Harvest Integration{% endblock %}
+
+{% block extra_css %}
+<link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="bi bi-diagram-3"></i>
+            Project Mappings
+        </h1>
+        <p class="lead text-muted mb-5">
+            Map your calendar event labels to specific Harvest projects and tasks. 
+            The app will automatically match events based on these mappings.
+        </p>
+    </div>
+</div>
+
+
+
+<!-- Add New Mapping -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card mapping-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-plus-circle"></i>
+                    Add New Mapping
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="mapping-form">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="calendar_label" class="form-label">Calendar Event Label</label>
+                            <div class="input-group" id="dropdown-container">
+                                <div class="dropdown flex-grow-1">
+                                    <input type="text" class="form-control dropdown-toggle" id="calendar_label_search"
+                                           placeholder="Search calendar labels..." autocomplete="off"
+                                           data-bs-toggle="dropdown" aria-expanded="false">
+                                    <ul class="dropdown-menu w-100" id="calendar_labels_dropdown">
+                                        <li id="calendar-labels-loading">
+                                            <span class="dropdown-item-text text-primary loading-pulse">
+                                                <i class="bi bi-arrow-clockwise spin me-2"></i>
+                                                <strong>Loading calendar labels...</strong>
+                                                <br><small class="text-muted">First load: ~45 seconds, then cached for 5 minutes</small>
+                                            </span>
+                                        </li>
+                                        <li id="calendar-labels-empty" class="d-none-csp">
+                                            <span class="dropdown-item-text text-muted">No labels found</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <button class="btn btn-outline-secondary" type="button" id="toggle-manual-input"
+                                        title="Switch to manual input">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                            </div>
+                            <input type="text" class="form-control mt-2 d-none-csp" id="calendar_label_manual" name="calendar_label"
+                                   placeholder="Or type custom label...">
+                            <div class="form-text">
+                                <span id="label-help-dropdown">Choose from your actual calendar events</span>
+                                <span id="label-help-manual" class="d-none-csp">Text to match in calendar event titles</span>
+                                <button type="button" class="btn btn-link btn-sm p-0 ms-2" onclick="refreshCalendarLabels()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="harvest_project" class="form-label">Harvest Project</label>
+                            <select class="form-select" id="harvest_project" name="harvest_project" required>
+                                <option value="">Loading projects...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="harvest_task" class="form-label">Harvest Task</label>
+                            <select class="form-select" id="harvest_task" name="harvest_task" required>
+                                <option value="">Select a project first</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-plus"></i>
+                                Add Mapping
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary ms-2" onclick="clearForm()">
+                                <i class="bi bi-x"></i>
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Existing Mappings -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-list"></i>
+                    Current Mappings
+                </h5>
+                <span class="badge bg-info" id="mappings-count">0 mappings</span>
+            </div>
+            <div class="card-body">
+                <div id="mappings-loading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Loading mappings...</p>
+                </div>
+                
+                <div id="mappings-empty" class="text-center py-4 d-none-csp">
+                    <i class="bi bi-inbox display-4 text-muted"></i>
+                    <h5 class="mt-3 text-muted">No Mappings Yet</h5>
+                    <p class="text-muted">
+                        Create your first mapping above to start automatically matching
+                        calendar events to Harvest projects.
+                    </p>
+                </div>
+
+                <div id="mappings-table" class="d-none-csp">
+                    <div class="table-responsive">
+                        <table class="table table-hover mapping-table">
+                            <thead>
+                                <tr>
+                                    <th>Calendar Label</th>
+                                    <th>Harvest Project</th>
+                                    <th>Harvest Task</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mappings-tbody">
+                                <!-- Mappings will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Mapping Tools -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning"></i>
+                    Bulk Mapping Tools
+                </h5>
+                <div class="btn-group">
+                    <button class="btn btn-outline-primary btn-sm" onclick="showPatternRulesModal()">
+                        <i class="bi bi-gear"></i> Pattern Rules
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="showImportExportModal()">
+                        <i class="bi bi-arrow-down-up"></i> Import/Export
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="cleanupAllMappings()">
+                        <i class="bi bi-trash"></i> Cleanup All
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    Create pattern-based rules to automatically map events, or bulk assign mappings to multiple events.
+                </p>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-grid">
+                            <button class="btn btn-primary" onclick="showBulkAssignModal()">
+                                <i class="bi bi-check2-square"></i>
+                                Bulk Assign Mappings
+                            </button>
+                        </div>
+                        <small class="text-muted">Select multiple events and assign the same mapping</small>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-grid">
+                            <button class="btn btn-info" onclick="showCreateRuleModal()">
+                                <i class="bi bi-magic"></i>
+                                Create Pattern Rule
+                            </button>
+                        </div>
+                        <small class="text-muted">Automatically map events based on text patterns</small>
+                    </div>
+                </div>
+
+                <div id="pattern-rules-summary" class="mt-3 d-none-csp">
+                    <h6>Active Pattern Rules</h6>
+                    <div id="pattern-rules-list">
+                        <!-- Pattern rules will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Create Pattern Rule Modal -->
+<div class="modal fade" id="createRuleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-magic"></i>
+                    Create Pattern Rule
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="pattern-rule-form">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Rule Name</label>
+                                <input type="text" class="form-control" id="rule-name" placeholder="e.g., ČSAS Events" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Pattern Type</label>
+                                <select class="form-select" id="pattern-type" required>
+                                    <option value="contains">Contains text</option>
+                                    <option value="starts_with">Starts with text</option>
+                                    <option value="regex">Regular expression</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label class="form-label">Pattern Value</label>
+                                <input type="text" class="form-control" id="pattern-value" placeholder="e.g., ČSAS" required>
+                                <div class="form-text">Text or pattern to match in events</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Apply To</label>
+                                <select class="form-select" id="apply-to">
+                                    <option value="summary">Event title</option>
+                                    <option value="description">Description</option>
+                                    <option value="location">Location</option>
+                                    <option value="all">All fields</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Harvest Project</label>
+                                <select class="form-select" id="rule-project-select" required>
+                                    <option value="">Select Project...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Harvest Task</label>
+                                <select class="form-select" id="rule-task-select" required>
+                                    <option value="">Select Task...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="case-sensitive">
+                        <label class="form-check-label" for="case-sensitive">
+                            Case sensitive matching
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createPatternRule()">Create Rule</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Assign Modal -->
+<div class="modal fade" id="bulkAssignModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-check2-square"></i>
+                    Bulk Assign Mappings
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Bulk assignment is available on the Process page</strong><br>
+                    Go to the Process page to select multiple unmapped events and assign them the same project/task mapping.
+                </div>
+                <div class="d-grid">
+                    <a href="/process" class="btn btn-primary">
+                        <i class="bi bi-arrow-right"></i> Go to Process Page
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pattern Rules Management Modal -->
+<div class="modal fade" id="patternRulesModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-gear"></i>
+                    Pattern Rules Management
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6>Active Pattern Rules</h6>
+                        <div id="modal-pattern-rules-list" class="mb-3">
+                            <!-- Pattern rules will be populated here -->
+                        </div>
+                        <div id="modal-pattern-rules-empty" class="text-center py-4 d-none-csp">
+                            <i class="bi bi-magic display-4 text-muted"></i>
+                            <h5 class="mt-3 text-muted">No Pattern Rules</h5>
+                            <p class="text-muted">
+                                Create pattern rules to automatically map events based on text patterns.<br>
+                                Use the form on the right to create your first rule.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 border-start">
+                        <h6>Create New Rule</h6>
+                        <form id="modal-pattern-rule-form">
+                            <div class="mb-3">
+                                <label class="form-label">Rule Name</label>
+                                <input type="text" class="form-control" id="modal-rule-name" placeholder="e.g., ČSAS Events" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Pattern Type</label>
+                                <select class="form-select" id="modal-pattern-type">
+                                    <option value="contains">Contains</option>
+                                    <option value="starts_with">Starts With</option>
+                                    <option value="regex">Regular Expression</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Pattern Value</label>
+                                <input type="text" class="form-control" id="modal-pattern-value" placeholder="e.g., ČSAS, DP, meeting" required>
+                                <small class="text-muted">Text to match in event titles</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Apply To</label>
+                                <select class="form-select" id="modal-apply-to">
+                                    <option value="summary">Event Title</option>
+                                    <option value="description">Description</option>
+                                    <option value="location">Location</option>
+                                    <option value="all">All Fields</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Project</label>
+                                <select class="form-select" id="modal-rule-project-select" onchange="handleModalRuleProjectChange()">
+                                    <option value="">Select Project...</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Task</label>
+                                <select class="form-select" id="modal-rule-task-select" disabled>
+                                    <option value="">Select Task...</option>
+                                </select>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="modal-case-sensitive">
+                                <label class="form-check-label" for="modal-case-sensitive">
+                                    Case sensitive matching
+                                </label>
+                            </div>
+                            <button type="button" class="btn btn-primary w-100" onclick="createModalPatternRule()">
+                                <i class="bi bi-plus-circle"></i> Create Rule
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-outline-primary" onclick="refreshModalPatternRules()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Import/Export Modal -->
+<div class="modal fade" id="importExportModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-arrow-down-up"></i>
+                    Import/Export Mappings
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Export Mappings</h6>
+                        <p class="text-muted">Download your current mappings as JSON</p>
+                        <button class="btn btn-outline-primary" onclick="exportMappings()">
+                            <i class="bi bi-download"></i> Export Mappings
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Import Mappings</h6>
+                        <p class="text-muted">Upload mappings from JSON file</p>
+
+                        <div class="mb-3">
+                            <label class="form-label">Merge Strategy</label>
+                            <select class="form-select" id="merge-strategy">
+                                <option value="update">Update existing mappings</option>
+                                <option value="skip">Skip existing mappings</option>
+                                <option value="replace">Replace all mappings</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <input type="file" class="form-control" id="import-file" accept=".json">
+                        </div>
+
+                        <button class="btn btn-outline-success" onclick="importMappings()">
+                            <i class="bi bi-upload"></i> Import Mappings
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mapping Tips -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightbulb"></i>
+                    Mapping Tips
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-target text-primary"></i> Effective Labels</h6>
+                        <ul class="text-muted">
+                            <li>Use specific keywords that appear in your event titles</li>
+                            <li>Examples: "Client Meeting", "Development", "Planning"</li>
+                            <li>Case-insensitive matching (e.g., "meeting" matches "Meeting")</li>
+                            <li>Partial matches work (e.g., "dev" matches "Development Work")</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-gear text-success"></i> Best Practices</h6>
+                        <ul class="text-muted">
+                            <li>Start with broad categories, then add specific ones</li>
+                            <li>More specific labels take priority over general ones</li>
+                            <li>Test your mappings with the preview feature</li>
+                            <li>Review and update mappings regularly</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>How Matching Works:</strong>
+                    The app searches for your calendar labels within event titles, descriptions, and locations. 
+                    When multiple labels match, the most specific (longest) match is used.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this mapping?</p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    This action cannot be undone. Future calendar events will no longer
+                    be matched to this project.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">Delete Mapping</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentMappings = [];
+let harvestProjects = [];
+let calendarLabels = [];
+let deleteModal;
+let createRuleModal;
+let patternRulesModal;
+let bulkAssignModal;
+let importExportModal;
+let mappingToDelete = null;
+let isManualInput = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    createRuleModal = new bootstrap.Modal(document.getElementById('createRuleModal'));
+    patternRulesModal = new bootstrap.Modal(document.getElementById('patternRulesModal'));
+    bulkAssignModal = new bootstrap.Modal(document.getElementById('bulkAssignModal'));
+    importExportModal = new bootstrap.Modal(document.getElementById('importExportModal'));
+
+    loadHarvestProjects();
+    loadMappings();
+    loadCalendarLabels();
+    loadPatternRules();
+
+    // Setup form submission
+    document.getElementById('mapping-form').addEventListener('submit', handleMappingSubmit);
+
+    // Setup project selection change
+    document.getElementById('harvest_project').addEventListener('change', handleProjectChange);
+    document.getElementById('rule-project-select').addEventListener('change', handleRuleProjectChange);
+
+    // Setup delete confirmation
+    document.getElementById('confirmDelete').addEventListener('click', handleDeleteConfirm);
+
+    // Setup manual input toggle
+    document.getElementById('toggle-manual-input').addEventListener('click', toggleManualInput);
+
+    // Setup searchable dropdown
+    document.getElementById('calendar_label_search').addEventListener('input', filterCalendarLabels);
+    document.getElementById('calendar_label_search').addEventListener('focus', showAllLabels);
+});
+
+function loadHarvestProjects() {
+    fetch('/api/harvest/projects')
+        .then(response => response.json())
+        .then(data => {
+            harvestProjects = data.projects || [];
+            populateProjectSelect();
+        })
+        .catch(error => {
+            console.error('Error loading projects:', error);
+            CalendarHarvestApp.showError('Failed to load Harvest projects');
+        });
+}
+
+function populateProjectSelect() {
+    const select = document.getElementById('harvest_project');
+    select.innerHTML = '<option value="">Select a project...</option>';
+    
+    harvestProjects.forEach(project => {
+        const option = document.createElement('option');
+        option.value = project.id;
+        option.textContent = `${project.name} (${project.client_name})`;
+        option.dataset.projectName = project.name;
+        select.appendChild(option);
+    });
+}
+
+function handleProjectChange(event) {
+    const projectId = event.target.value;
+    const taskSelect = document.getElementById('harvest_task');
+    
+    if (!projectId) {
+        taskSelect.innerHTML = '<option value="">Select a project first</option>';
+        return;
+    }
+    
+    taskSelect.innerHTML = '<option value="">Loading tasks...</option>';
+    
+    fetch(`/api/harvest/projects/${projectId}/tasks`)
+        .then(response => response.json())
+        .then(data => {
+            taskSelect.innerHTML = '<option value="">Select a task...</option>';
+            
+            data.tasks.forEach(task => {
+                const option = document.createElement('option');
+                option.value = task.id;
+                option.textContent = task.name;
+                option.dataset.taskName = task.name;
+                taskSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading tasks:', error);
+            taskSelect.innerHTML = '<option value="">Error loading tasks</option>';
+        });
+}
+
+function loadCalendarLabels() {
+    const dropdown = document.getElementById('calendar_labels_dropdown');
+    const loadingItem = document.getElementById('calendar-labels-loading');
+    const emptyItem = document.getElementById('calendar-labels-empty');
+
+    // Show loading state
+    loadingItem.classList.remove('d-none-csp');
+    emptyItem.classList.add('d-none-csp');
+
+    // Clear any existing labels
+    const existingLabels = dropdown.querySelectorAll('.calendar-label-item');
+    existingLabels.forEach(item => item.remove());
+
+    fetch('/api/calendar/labels?weeks=8&min_frequency=1')
+        .then(response => response.json())
+        .then(data => {
+            // Hide loading state
+            loadingItem.classList.add('d-none-csp');
+
+            calendarLabels = data.labels || [];
+            if (calendarLabels.length > 0) {
+                populateCalendarLabelsDropdown();
+            } else {
+                // Show empty state
+                emptyItem.classList.remove('d-none-csp');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading calendar labels:', error);
+            // Hide loading, show error
+            loadingItem.classList.add('d-none-csp');
+            emptyItem.classList.remove('d-none-csp');
+            emptyItem.innerHTML = '<span class="dropdown-item-text text-danger">Error loading labels - click refresh</span>';
+        });
+}
+
+function populateCalendarLabelsDropdown(filteredLabels = null) {
+    const dropdown = document.getElementById('calendar_labels_dropdown');
+    const labelsToShow = filteredLabels || calendarLabels;
+
+    // Clear existing label items but preserve loading/empty states
+    const existingLabels = dropdown.querySelectorAll('.calendar-label-item');
+    existingLabels.forEach(item => item.remove());
+
+    if (labelsToShow.length === 0) {
+        // Empty state is handled by the calling function
+        return;
+    }
+
+    // Add header for calendar labels
+    const header = document.createElement('li');
+    header.className = 'calendar-label-item';
+    header.innerHTML = '<h6 class="dropdown-header">Your Calendar Labels</h6>';
+    dropdown.appendChild(header);
+
+    // Add each label to the dropdown
+    labelsToShow.forEach(labelData => {
+        const item = document.createElement('li');
+        item.className = 'calendar-label-item';
+        const link = document.createElement('a');
+        link.className = 'dropdown-item d-flex align-items-center';
+        link.href = '#';
+
+        // Create color dot with CSS class
+        const colorDot = document.createElement('span');
+        colorDot.className = `calendar-label-dot me-2 ${CalendarHarvestApp.getLabelCssClass(labelData.label)}`;
+
+        // Create label text
+        const labelText = document.createElement('span');
+        labelText.textContent = labelData.label;
+
+        link.appendChild(colorDot);
+        link.appendChild(labelText);
+
+        link.onclick = (e) => {
+            e.preventDefault();
+            selectCalendarLabel(labelData.label);
+        };
+
+        item.appendChild(link);
+        dropdown.appendChild(item);
+    });
+}
+
+function selectCalendarLabel(label) {
+    const searchInput = document.getElementById('calendar_label_search');
+    searchInput.value = label;
+
+    // Close dropdown
+    const dropdown = bootstrap.Dropdown.getInstance(searchInput);
+    if (dropdown) {
+        dropdown.hide();
+    }
+}
+
+function filterCalendarLabels() {
+    const searchTerm = document.getElementById('calendar_label_search').value.toLowerCase();
+
+    if (!searchTerm) {
+        populateCalendarLabelsDropdown();
+        return;
+    }
+
+    const filteredLabels = calendarLabels.filter(label =>
+        label.label.toLowerCase().includes(searchTerm)
+    );
+
+    populateCalendarLabelsDropdown(filteredLabels);
+}
+
+function showAllLabels() {
+    populateCalendarLabelsDropdown();
+}
+
+function refreshCalendarLabels() {
+    loadCalendarLabels();
+}
+
+function toggleManualInput() {
+    const dropdownContainer = document.getElementById('dropdown-container');
+    const manualInput = document.getElementById('calendar_label_manual');
+    const helpDropdown = document.getElementById('label-help-dropdown');
+    const helpManual = document.getElementById('label-help-manual');
+    const toggleBtn = document.getElementById('toggle-manual-input');
+
+    isManualInput = !isManualInput;
+
+    if (isManualInput) {
+        dropdownContainer.classList.add('d-none-csp');
+        manualInput.classList.remove('d-none-csp');
+        helpDropdown.classList.add('d-none-csp');
+        helpManual.classList.remove('d-none-csp');
+        toggleBtn.innerHTML = '<i class="bi bi-search"></i>';
+        toggleBtn.title = 'Switch to searchable dropdown';
+        manualInput.focus();
+    } else {
+        dropdownContainer.classList.remove('d-none-csp');
+        dropdownContainer.classList.add('d-flex-csp');
+        manualInput.classList.add('d-none-csp');
+        helpDropdown.classList.remove('d-none-csp');
+        helpManual.classList.add('d-none-csp');
+        toggleBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+        toggleBtn.title = 'Switch to manual input';
+    }
+}
+
+function handleMappingSubmit(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    let calendarLabel;
+
+    // Get calendar label from either dropdown or manual input
+    if (isManualInput) {
+        calendarLabel = formData.get('calendar_label');
+    } else {
+        calendarLabel = document.getElementById('calendar_label_search').value;
+    }
+
+    const projectId = formData.get('harvest_project');
+    const taskId = formData.get('harvest_task');
+    
+    // Get project and task names
+    const projectSelect = document.getElementById('harvest_project');
+    const taskSelect = document.getElementById('harvest_task');
+    const projectName = projectSelect.options[projectSelect.selectedIndex].dataset.projectName;
+    const taskName = taskSelect.options[taskSelect.selectedIndex].dataset.taskName;
+    
+    const data = {
+        calendar_label: calendarLabel,
+        harvest_project_id: parseInt(projectId),
+        harvest_project_name: projectName,
+        harvest_task_id: parseInt(taskId),
+        harvest_task_name: taskName
+    };
+    
+    fetch('/api/mappings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            CalendarHarvestApp.showSuccess('Mapping created successfully!');
+            clearForm();
+            loadMappings();
+            // Refresh dropdowns to hide newly mapped items
+            loadCalendarLabels();
+            loadHarvestProjects();
+        } else {
+            CalendarHarvestApp.showError(data.message || data.error || 'Failed to create mapping');
+        }
+    })
+    .catch(error => {
+        console.error('Error creating mapping:', error);
+        CalendarHarvestApp.showError('Failed to create mapping');
+    });
+}
+
+function loadMappings() {
+    document.getElementById('mappings-loading').classList.remove('d-none-csp');
+    document.getElementById('mappings-empty').classList.add('d-none-csp');
+    document.getElementById('mappings-table').classList.add('d-none-csp');
+
+    fetch('/api/mappings')
+        .then(response => response.json())
+        .then(data => {
+            currentMappings = data.mappings || [];
+            displayMappings();
+        })
+        .catch(error => {
+            console.error('Error loading mappings:', error);
+            CalendarHarvestApp.showError('Failed to load mappings');
+        })
+        .finally(() => {
+            document.getElementById('mappings-loading').classList.add('d-none-csp');
+        });
+}
+
+function displayMappings() {
+    const countElement = document.getElementById('mappings-count');
+    countElement.textContent = `${currentMappings.length} mapping${currentMappings.length !== 1 ? 's' : ''}`;
+
+    if (currentMappings.length === 0) {
+        document.getElementById('mappings-empty').classList.remove('d-none-csp');
+        return;
+    }
+
+    const tbody = document.getElementById('mappings-tbody');
+    tbody.innerHTML = '';
+
+    currentMappings.forEach(mapping => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <span class="badge ${CalendarHarvestApp.getLabelCssClass(mapping.calendar_label)}">${mapping.calendar_label}</span>
+            </td>
+            <td>${mapping.harvest_project_name}</td>
+            <td>${mapping.harvest_task_name}</td>
+            <td>
+                <small class="text-muted">
+                    ${new Date(mapping.created_at).toLocaleDateString()}
+                </small>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteMapping(${mapping.id})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    document.getElementById('mappings-table').classList.remove('d-none-csp');
+}
+
+function deleteMapping(mappingId) {
+    mappingToDelete = mappingId;
+    deleteModal.show();
+}
+
+function handleDeleteConfirm() {
+    if (!mappingToDelete) return;
+    
+    fetch(`/api/mappings/${mappingToDelete}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            CalendarHarvestApp.showSuccess('Mapping deleted successfully!');
+            loadMappings();
+            // Refresh dropdowns to show newly available items
+            loadCalendarLabels();
+            loadHarvestProjects();
+        } else {
+            CalendarHarvestApp.showError(data.error || 'Failed to delete mapping');
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting mapping:', error);
+        CalendarHarvestApp.showError('Failed to delete mapping');
+    })
+    .finally(() => {
+        deleteModal.hide();
+        mappingToDelete = null;
+    });
+}
+
+function clearForm() {
+    document.getElementById('mapping-form').reset();
+    document.getElementById('harvest_task').innerHTML = '<option value="">Select a project first</option>';
+    document.getElementById('calendar_label_search').value = '';
+    document.getElementById('calendar_label_manual').value = '';
+}
+
+
+
+
+
+
+
+// Bulk Mapping Functions
+function showCreateRuleModal() {
+    // Populate project dropdown
+    const projectSelect = document.getElementById('rule-project-select');
+    projectSelect.innerHTML = '<option value="">Select Project...</option>';
+
+    harvestProjects.forEach(project => {
+        const option = document.createElement('option');
+        option.value = project.id;
+        option.textContent = project.name;
+        projectSelect.appendChild(option);
+    });
+
+    createRuleModal.show();
+}
+
+function handleRuleProjectChange() {
+    const projectSelect = document.getElementById('rule-project-select');
+    const taskSelect = document.getElementById('rule-task-select');
+
+    const projectId = projectSelect.value;
+
+    taskSelect.innerHTML = '<option value="">Select a task...</option>';
+
+    if (!projectId) return;
+
+    fetch(`/api/harvest/projects/${projectId}/tasks`)
+        .then(response => response.json())
+        .then(data => {
+            data.tasks.forEach(task => {
+                const option = document.createElement('option');
+                option.value = task.id;
+                option.textContent = task.name;
+                option.dataset.taskName = task.name;
+                taskSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading tasks:', error);
+            taskSelect.innerHTML = '<option value="">Error loading tasks</option>';
+        });
+}
+
+function createPatternRule() {
+    const formData = {
+        name: document.getElementById('rule-name').value,
+        pattern_type: document.getElementById('pattern-type').value,
+        pattern_value: document.getElementById('pattern-value').value,
+        apply_to: document.getElementById('apply-to').value,
+        case_sensitive: document.getElementById('case-sensitive').checked,
+        harvest_project_id: parseInt(document.getElementById('rule-project-select').value),
+        harvest_project_name: document.getElementById('rule-project-select').options[document.getElementById('rule-project-select').selectedIndex].textContent,
+        harvest_task_id: parseInt(document.getElementById('rule-task-select').value),
+        harvest_task_name: document.getElementById('rule-task-select').options[document.getElementById('rule-task-select').selectedIndex].textContent
+    };
+
+    if (!formData.name || !formData.pattern_value || !formData.harvest_project_id || !formData.harvest_task_id) {
+        CalendarHarvestApp.showError('Please fill in all required fields');
+        return;
+    }
+
+    fetch('/api/bulk-mapping/pattern-rules', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            CalendarHarvestApp.showSuccess('Pattern rule created successfully');
+            createRuleModal.hide();
+            loadPatternRules();
+            document.getElementById('pattern-rule-form').reset();
+        } else {
+            CalendarHarvestApp.showError(data.message || data.error || 'Failed to create pattern rule');
+        }
+    })
+    .catch(error => {
+        console.error('Error creating pattern rule:', error);
+        CalendarHarvestApp.showError('Failed to create pattern rule');
+    });
+}
+
+function loadPatternRules() {
+    fetch('/api/bulk-mapping/pattern-rules')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayPatternRules(data.rules || []);
+            } else {
+                console.error('Failed to load pattern rules:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading pattern rules:', error);
+        });
+}
+
+function displayPatternRules(rules) {
+    const summaryDiv = document.getElementById('pattern-rules-summary');
+    const listDiv = document.getElementById('pattern-rules-list');
+
+    if (rules.length === 0) {
+        summaryDiv.classList.add('d-none-csp');
+        return;
+    }
+
+    summaryDiv.classList.remove('d-none-csp');
+    listDiv.innerHTML = '';
+
+    rules.forEach(rule => {
+        const ruleDiv = document.createElement('div');
+        ruleDiv.className = 'pattern-rule mb-2 p-2 border rounded';
+        ruleDiv.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>${rule.name}</strong>
+                    <span class="badge bg-secondary ms-2">${rule.pattern_type}</span>
+                    <br>
+                    <small class="text-muted">
+                        Pattern: "${rule.pattern_value}" → ${rule.harvest_project_name} / ${rule.harvest_task_name}
+                        <br>Applied ${rule.applied_count} times
+                    </small>
+                </div>
+                <button class="btn btn-outline-danger btn-sm" onclick="deletePatternRule('${rule.id}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+        listDiv.appendChild(ruleDiv);
+    });
+}
+
+function showImportExportModal() {
+    importExportModal.show();
+}
+
+function exportMappings() {
+    fetch('/api/bulk-mapping/export')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Create download link
+                const blob = new Blob([JSON.stringify(data.data, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `calendar-harvest-mappings-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                CalendarHarvestApp.showSuccess('Mappings exported successfully');
+            } else {
+                CalendarHarvestApp.showError(data.error || 'Failed to export mappings');
+            }
+        })
+        .catch(error => {
+            console.error('Error exporting mappings:', error);
+            CalendarHarvestApp.showError('Failed to export mappings');
+        });
+}
+
+function importMappings() {
+    const fileInput = document.getElementById('import-file');
+    const mergeStrategy = document.getElementById('merge-strategy').value;
+
+    if (!fileInput.files[0]) {
+        CalendarHarvestApp.showError('Please select a file to import');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const importData = JSON.parse(e.target.result);
+
+            fetch('/api/bulk-mapping/import', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    import_data: importData,
+                    merge_strategy: mergeStrategy
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const results = data.results;
+                    CalendarHarvestApp.showSuccess(
+                        `Import completed: ${results.imported} imported, ${results.updated} updated, ${results.skipped} skipped`
+                    );
+                    importExportModal.hide();
+                    loadMappings(); // Refresh mappings display
+                    // Refresh dropdowns to hide newly mapped items
+                    loadCalendarLabels();
+                    loadHarvestProjects();
+                } else {
+                    CalendarHarvestApp.showError(data.error || 'Failed to import mappings');
+                }
+            })
+            .catch(error => {
+                console.error('Error importing mappings:', error);
+                CalendarHarvestApp.showError('Failed to import mappings');
+            });
+
+        } catch (error) {
+            CalendarHarvestApp.showError('Invalid JSON file');
+        }
+    };
+
+    reader.readAsText(fileInput.files[0]);
+}
+
+function showBulkAssignModal() {
+    bulkAssignModal.show();
+}
+
+function showPatternRulesModal() {
+    // Populate project dropdown in modal
+    const modalProjectSelect = document.getElementById('modal-rule-project-select');
+    modalProjectSelect.innerHTML = '<option value="">Select Project...</option>';
+
+    harvestProjects.forEach(project => {
+        const option = document.createElement('option');
+        option.value = project.id;
+        option.textContent = project.name;
+        modalProjectSelect.appendChild(option);
+    });
+
+    // Load and display pattern rules
+    refreshModalPatternRules();
+
+    // Show the modal
+    patternRulesModal.show();
+}
+
+function refreshModalPatternRules() {
+    fetch('/api/bulk-mapping/pattern-rules')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayModalPatternRules(data.rules || []);
+            } else {
+                console.error('Failed to load pattern rules:', data.error);
+                CalendarHarvestApp.showError('Failed to load pattern rules');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading pattern rules:', error);
+            CalendarHarvestApp.showError('Failed to load pattern rules');
+        });
+}
+
+function displayModalPatternRules(rules) {
+    const listDiv = document.getElementById('modal-pattern-rules-list');
+    const emptyDiv = document.getElementById('modal-pattern-rules-empty');
+
+    if (rules.length === 0) {
+        listDiv.classList.add('d-none-csp');
+        emptyDiv.classList.remove('d-none-csp');
+        return;
+    }
+
+    listDiv.classList.remove('d-none-csp');
+    emptyDiv.classList.add('d-none-csp');
+    listDiv.innerHTML = '';
+
+    rules.forEach(rule => {
+        const ruleDiv = document.createElement('div');
+        ruleDiv.className = 'card mb-3';
+        ruleDiv.innerHTML = `
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title mb-1">
+                            ${rule.name}
+                            <span class="badge bg-secondary ms-2">${rule.pattern_type}</span>
+                            ${rule.is_active ? '<span class="badge bg-success ms-1">Active</span>' : '<span class="badge bg-secondary ms-1">Inactive</span>'}
+                        </h6>
+                        <p class="card-text mb-2">
+                            <strong>Pattern:</strong> "${rule.pattern_value}" in ${rule.apply_to}<br>
+                            <strong>Maps to:</strong> ${rule.harvest_project_name} / ${rule.harvest_task_name}<br>
+                            <small class="text-muted">Applied ${rule.applied_count} times</small>
+                        </p>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteModalPatternRule('${rule.id}')" title="Delete Rule">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        listDiv.appendChild(ruleDiv);
+    });
+}
+
+function handleModalRuleProjectChange() {
+    const projectSelect = document.getElementById('modal-rule-project-select');
+    const taskSelect = document.getElementById('modal-rule-task-select');
+
+    const projectId = projectSelect.value;
+
+    taskSelect.innerHTML = '<option value="">Select a task...</option>';
+    taskSelect.disabled = !projectId;
+
+    if (!projectId) return;
+
+    fetch(`/api/harvest/projects/${projectId}/tasks`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.tasks) {
+                data.tasks.forEach(task => {
+                    const option = document.createElement('option');
+                    option.value = task.id;
+                    option.textContent = task.name;
+                    taskSelect.appendChild(option);
+                });
+                taskSelect.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading tasks:', error);
+            taskSelect.innerHTML = '<option value="">Error loading tasks</option>';
+        });
+}
+
+function createModalPatternRule() {
+    const formData = {
+        name: document.getElementById('modal-rule-name').value,
+        pattern_type: document.getElementById('modal-pattern-type').value,
+        pattern_value: document.getElementById('modal-pattern-value').value,
+        apply_to: document.getElementById('modal-apply-to').value,
+        harvest_project_id: parseInt(document.getElementById('modal-rule-project-select').value),
+        harvest_project_name: document.getElementById('modal-rule-project-select').options[document.getElementById('modal-rule-project-select').selectedIndex].textContent,
+        harvest_task_id: parseInt(document.getElementById('modal-rule-task-select').value),
+        harvest_task_name: document.getElementById('modal-rule-task-select').options[document.getElementById('modal-rule-task-select').selectedIndex].textContent,
+        case_sensitive: document.getElementById('modal-case-sensitive').checked
+    };
+
+    if (!formData.name || !formData.pattern_value || !formData.harvest_project_id || !formData.harvest_task_id) {
+        CalendarHarvestApp.showError('Please fill in all required fields');
+        return;
+    }
+
+    fetch('/api/bulk-mapping/pattern-rules', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            CalendarHarvestApp.showSuccess('Pattern rule created successfully');
+            document.getElementById('modal-pattern-rule-form').reset();
+            document.getElementById('modal-rule-task-select').disabled = true;
+            refreshModalPatternRules();
+            loadPatternRules(); // Refresh the main page rules too
+        } else {
+            CalendarHarvestApp.showError(data.message || data.error || 'Failed to create pattern rule');
+        }
+    })
+    .catch(error => {
+        console.error('Error creating pattern rule:', error);
+        CalendarHarvestApp.showError('Failed to create pattern rule');
+    });
+}
+
+function deleteModalPatternRule(ruleId) {
+    if (!confirm('Are you sure you want to delete this pattern rule?')) {
+        return;
+    }
+
+    fetch(`/api/bulk-mapping/pattern-rules/${ruleId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            CalendarHarvestApp.showSuccess('Pattern rule deleted successfully');
+            refreshModalPatternRules();
+            loadPatternRules(); // Refresh the main page rules too
+        } else {
+            CalendarHarvestApp.showError(data.error || 'Failed to delete pattern rule');
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting pattern rule:', error);
+        CalendarHarvestApp.showError('Failed to delete pattern rule');
+    });
+}
+
+function cleanupAllMappings() {
+    if (!confirm('Are you sure you want to delete ALL mappings? This action cannot be undone.')) {
+        return;
+    }
+
+    fetch('/api/mappings/cleanup', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            CalendarHarvestApp.showSuccess(`Successfully deleted ${data.deleted_count} mappings`);
+            loadMappings(); // Refresh the mappings list
+            loadCalendarLabels(); // Refresh dropdowns
+            loadHarvestProjects();
+        } else {
+            CalendarHarvestApp.showError(data.error || 'Failed to cleanup mappings');
+        }
+    })
+    .catch(error => {
+        console.error('Error cleaning up mappings:', error);
+        CalendarHarvestApp.showError('Failed to cleanup mappings');
+    });
+}
+</script>
+{% endblock %}

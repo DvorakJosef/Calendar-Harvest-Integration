@@ -1,0 +1,83 @@
+# Environment variables
+.env
+.env.development
+.env.production
+.env.local
+.env.*.local
+
+# Secrets and credentials
+client_secret*.json
+*_secret*.json
+secrets.json
+credentials.json
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+user_activity.log
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+terminal
+
+# Cache
+.cache/
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+timesheet_preview.json
+harvest_audit*.json
+incident_report*.json
+reverse_incident_investigation*.json
+colleague_audit_plan*.json
+harvest_entries_report*.txt
+harvest_users_mapping.txt
+harvest_timesheet_preview*.md
+cloud-sql-config.txt
+
