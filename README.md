@@ -1,14 +1,17 @@
-# Calendar-Harvest Integration (Clean)
+# Calendar-Harvest Integration
 
-A standalone Calendar-Harvest Integration application that automatically syncs Google Calendar events to Harvest timesheets.
+A native macOS desktop application that automatically syncs Google Calendar events to Harvest timesheets. **Zero cloud costs, simple distribution, native experience.**
 
 ## 🎯 Features
 
+- **Native macOS App** - Desktop application with zero cloud costs
 - **Multi-user support** with Google Workspace authentication
 - **Smart event grouping** - Combines events by project, task, and date
 - **Pattern recognition** - Automatically suggests mappings
 - **Real-time preview** - See exactly what entries will be created
 - **Duplicate detection** - Prevents duplicate time entries
+- **Automatic updates** - Built-in update checker
+- **Offline capable** - Works without internet (with caching)
 
 ## ⚠️ Important: Harvest Project Permissions
 
@@ -20,24 +23,45 @@ Projects only appear in the Calendar-Harvest Integration if you have **Manager-l
 
 ## 📖 Documentation
 
-- **[User Guide](USER_GUIDE.md)** - Complete guide for end users
+### For Users
+- **[Desktop App Guide](DESKTOP_APP_GUIDE.md)** - Installation and usage
+- **[User Guide](USER_GUIDE.md)** - Complete feature guide
+
+### For Developers
+- **[Desktop App Quick Start](DESKTOP_APP_QUICKSTART.md)** - Quick reference
+- **[Desktop App Implementation](DESKTOP_APP_IMPLEMENTATION.md)** - Technical details
+- **[Desktop App Evaluation](DESKTOP_APP_EVALUATION.md)** - Architecture decisions
+
+### For Setup
 - **[Harvest OAuth Setup](HARVEST_OAUTH_SETUP_GUIDE.md)** - OAuth 2.0 configuration
-- **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - Production deployment instructions
 
 ## 🚀 Quick Start
 
-### Development
+### For End Users (macOS)
+```bash
+# 1. Download the latest .dmg from GitHub Releases
+# 2. Double-click to open the installer
+# 3. Drag app to Applications folder
+# 4. Launch from Applications
+# Done! ✨
+```
+
+### For Developers (Local Testing)
 ```bash
 # Install dependencies
 pip install -r requirements.txt
 
-# Setup environment
-cp .env.example .env
-# Edit .env with your credentials
+# Run desktop app locally
+python3 desktop_app.py
+# Opens native macOS window at http://localhost:5001
+```
 
-# Run locally (when main.py is available)
-python3 main.py
-# Access at: http://127.0.0.1:5001
+### For Building Distribution
+```bash
+# Build .dmg installer
+chmod +x build_desktop_app.sh
+./build_desktop_app.sh
+# Creates Calendar-Harvest-Integration-1.0.0.dmg
 ```
 
 ## 📁 Clean Project Structure
