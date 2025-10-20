@@ -1776,6 +1776,22 @@ def execute_approved_entries():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# Desktop app update check endpoint
+@app.route('/api/check-updates', methods=['GET'])
+def check_updates():
+    """Check for application updates (desktop app only)"""
+    try:
+        from desktop_updater import check_for_updates_background
+        update_info = check_for_updates_background()
+        return jsonify(update_info or {'available': False})
+    except ImportError:
+        # desktop_updater not available (web app mode)
+        return jsonify({'available': False})
+    except Exception as e:
+        logger.error(f"Error checking updates: {e}")
+        return jsonify({'available': False, 'error': str(e)})
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

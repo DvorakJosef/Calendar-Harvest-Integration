@@ -1,0 +1,77 @@
+name: Build Desktop App
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+          brew install create-dmg
+      
+      - name: Build application
+        run: |
+          pyinstaller desktop_app.spec --clean
+      
+      - name: Create DMG installer
+        run: |
+          mkdir -p dmg_temp
+          cp -r dist/Calendar\ Harvest\ Integration.app dmg_temp/
+          ln -s /Applications dmg_temp/Applications
+          
+          create-dmg \
+            --volname "Calendar Harvest Integration" \
+            --volicon "static/icon.icns" \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --icon-size 100 \
+            --icon "Calendar Harvest Integration.app" 200 190 \
+            --hide-extension "Calendar Harvest Integration.app" \
+            --app-drop-link 600 190 \
+            Calendar-Harvest-Integration.dmg \
+            dmg_temp/
+          
+          rm -rf dmg_temp
+      
+      - name: Generate checksums
+        run: |
+          shasum -a 256 Calendar-Harvest-Integration.dmg > Calendar-Harvest-Integration.dmg.sha256
+          cat Calendar-Harvest-Integration.dmg.sha256
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            Calendar-Harvest-Integration.dmg
+            Calendar-Harvest-Integration.dmg.sha256
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: desktop-app
+          path: |
+            Calendar-Harvest-Integration.dmg
+            Calendar-Harvest-Integration.dmg.sha256
+
