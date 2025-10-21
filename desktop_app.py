@@ -116,7 +116,7 @@ class DesktopApp:
     def _create_window(self):
         """Create the PyWebView window"""
         logger.info("Creating application window...")
-        
+
         self.window = webview.create_window(
             title='Calendar Harvest Integration',
             url=self.server.url,
@@ -127,18 +127,15 @@ class DesktopApp:
             resizable=True,
             fullscreen=False
         )
-        
+
         # Set window icon (if available)
         icon_path = Path(__file__).parent / 'static' / 'icon.png'
         if icon_path.exists():
             self.window.icon = str(icon_path)
-        
+
         # Start the window (blocking call)
-        webview.start(
-            debug=False,
-            http_port=5001,
-            ssl=False
-        )
+        # Note: PyWebView will use the Flask server already running on localhost:5001
+        webview.start(debug=False)
     
     def on_close(self):
         """Handle window close event"""
