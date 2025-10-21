@@ -71,8 +71,9 @@ def login():
     
     authorization_url, state = flow.authorization_url(
         access_type='offline',
-        include_granted_scopes='false',  # Don't include granted scopes to force fresh consent
-        prompt='consent'  # Force consent screen
+        include_granted_scopes='false'  # Don't include granted scopes to force fresh consent
+        # Note: Removed prompt='consent' to allow passkey authentication to work properly
+        # Passkey authentication may fail when forcing the consent screen
     )
 
     # Store state in session for security
