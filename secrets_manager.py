@@ -141,9 +141,15 @@ class SecretsManager:
             db_url = self.get_secret('DATABASE_URL')
             if db_url:
                 return db_url
-        
-        # Development fallback
-        return os.getenv('DATABASE_URL', 'sqlite:///calendar_harvest_dev.db')
+
+        # Development fallback - use absolute path for SQLite
+        db_url = os.getenv('DATABASE_URL')
+        if db_url:
+            return db_url
+
+        # Default to absolute path for SQLite
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'calendar_harvest_dev.db')
+        return f'sqlite:///{db_path}'
     
     def get_oauth_credentials(self) -> Dict[str, Optional[str]]:
         """Get OAuth credentials for Google and Harvest"""
