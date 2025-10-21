@@ -46,8 +46,15 @@ app.config['SECRET_KEY'] = get_flask_secret_key()
 app.config['SQLALCHEMY_DATABASE_URI'] = get_database_url()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Initialize database with app
+db.init_app(app)
+
 # Validate configuration on startup
 config_validation = validate_configuration()
+
+# Initialize database tables on app creation
+with app.app_context():
+    db.create_all()
 if not config_validation['valid']:
     print("⚠️  Configuration validation warnings:")
     if config_validation['missing_secrets']:
@@ -66,9 +73,6 @@ app.config['SESSION_COOKIE_SECURE'] = os.getenv('FLASK_ENV') == 'production'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
-
-# Initialize database
-db.init_app(app)
 
 # Initialize CSRF protection (skip for desktop app)
 if os.getenv('FLASK_ENV') != 'desktop':
@@ -1799,9 +1803,6 @@ def check_updates():
 
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-
     # Use environment variable for port, default to 5001
     port = int(os.getenv('PORT', 5001))
     app.run(debug=True, port=port, host='127.0.0.1')
