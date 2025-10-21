@@ -70,8 +70,11 @@ app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
 # Initialize database
 db.init_app(app)
 
-# Initialize CSRF protection
-csrf = CSRFProtect(app)
+# Initialize CSRF protection (skip for desktop app)
+if os.getenv('FLASK_ENV') != 'desktop':
+    csrf = CSRFProtect(app)
+else:
+    print("🖥️  Desktop mode: CSRF protection disabled for PyWebView compatibility")
 
 # Initialize rate limiting
 def get_user_id():
@@ -86,53 +89,56 @@ limiter = Limiter(
     strategy="fixed-window"
 )
 
-# Initialize security headers
-csp = {
-    'default-src': "'self'",
-    'script-src': [
-        "'self'",
-        "'unsafe-inline'",  # Needed for Bootstrap and inline scripts
-        "https://cdn.jsdelivr.net",
-        "https://cdnjs.cloudflare.com"
-    ],
-    'style-src': [
-        "'self'",
-        "'unsafe-inline'",  # Needed for Bootstrap and inline styles
-        "https://cdn.jsdelivr.net",
-        "https://fonts.googleapis.com"
-    ],
-    'font-src': [
-        "'self'",
-        "https://cdn.jsdelivr.net",
-        "https://fonts.gstatic.com"
-    ],
-    'img-src': [
-        "'self'",
-        "data:",
-        "https:"
-    ],
-    'connect-src': [
-        "'self'",
-        "https://accounts.google.com",
-        "https://oauth2.googleapis.com",
-        "https://www.googleapis.com",
-        "https://id.getharvest.com",
-        "https://api.harvestapp.com"
-    ]
-}
-
-talisman = Talisman(
-    app,
-    force_https=os.getenv('FLASK_ENV') == 'production',
-    strict_transport_security=True,
-    content_security_policy=csp,
-    content_security_policy_nonce_in=[] if os.getenv('FLASK_ENV') == 'development' else ['script-src', 'style-src'],
-    feature_policy={
-        'geolocation': "'none'",
-        'camera': "'none'",
-        'microphone': "'none'"
+# Initialize security headers (skip for desktop app)
+if os.getenv('FLASK_ENV') != 'desktop':
+    csp = {
+        'default-src': "'self'",
+        'script-src': [
+            "'self'",
+            "'unsafe-inline'",  # Needed for Bootstrap and inline scripts
+            "https://cdn.jsdelivr.net",
+            "https://cdnjs.cloudflare.com"
+        ],
+        'style-src': [
+            "'self'",
+            "'unsafe-inline'",  # Needed for Bootstrap and inline styles
+            "https://cdn.jsdelivr.net",
+            "https://fonts.googleapis.com"
+        ],
+        'font-src': [
+            "'self'",
+            "https://cdn.jsdelivr.net",
+            "https://fonts.gstatic.com"
+        ],
+        'img-src': [
+            "'self'",
+            "data:",
+            "https:"
+        ],
+        'connect-src': [
+            "'self'",
+            "https://accounts.google.com",
+            "https://oauth2.googleapis.com",
+            "https://www.googleapis.com",
+            "https://id.getharvest.com",
+            "https://api.harvestapp.com"
+        ]
     }
-)
+
+    talisman = Talisman(
+        app,
+        force_https=os.getenv('FLASK_ENV') == 'production',
+        strict_transport_security=True,
+        content_security_policy=csp,
+        content_security_policy_nonce_in=[] if os.getenv('FLASK_ENV') == 'development' else ['script-src', 'style-src'],
+        feature_policy={
+            'geolocation': "'none'",
+            'camera': "'none'",
+            'microphone': "'none'"
+        }
+    )
+else:
+    print("🖥️  Desktop mode: Talisman security headers disabled for PyWebView compatibility")
 
 # Make CSRF token available in templates
 @app.context_processor
