@@ -18,12 +18,46 @@ from models import db, User, UserConfig
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 def login_required(f):
-    """Decorator to require user authentication"""
+    """Decorator to require user authentication (PyWebView compatible)"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            return redirect(url_for('auth.login'))
-        return f(*args, **kwargs)
+        # Check if user is in session
+        if 'user_id' in session:
+            return f(*args, **kwargs)
+
+        # For PyWebView compatibility, check for token in query params
+        token = request.args.get('token')
+        if token:
+            user = User.query.filter_by(persistent_token=token).first()
+            if user and user.is_active:
+                # Restore session
+                session['user_id'] = user.id
+                session['user_email'] = user.email
+                session['user_name'] = user.name
+                session['persistent_token'] = user.persistent_token
+                session.permanent = True
+                user.last_login = datetime.utcnow()
+                db.session.commit()
+                return f(*args, **kwargs)
+
+        # Check for token in localStorage (passed via header or query param)
+        # The frontend will need to pass it as a header or query param
+        auth_header = request.headers.get('Authorization', '')
+        if auth_header.startswith('Bearer '):
+            token = auth_header[7:]
+            user = User.query.filter_by(persistent_token=token).first()
+            if user and user.is_active:
+                # Restore session
+                session['user_id'] = user.id
+                session['user_email'] = user.email
+                session['user_name'] = user.name
+                session['persistent_token'] = user.persistent_token
+                session.permanent = True
+                user.last_login = datetime.utcnow()
+                db.session.commit()
+                return f(*args, **kwargs)
+
+        return redirect(url_for('auth.login'))
     return decorated_function
 
 def get_current_user():
