@@ -272,13 +272,11 @@ def index():
 
     if 'user_id' in session:
         print(f"   user_id value: {session.get('user_id')}")
+        print(f"   ✅ User authenticated, showing dashboard")
+        return render_template('index.html')
 
-    if 'user_id' not in session:
-        print(f"   ❌ No user_id in session, showing login page")
-        return render_template('login.html')
-
-    print(f"   ✅ User authenticated, showing dashboard")
-    return render_template('index.html')
+    print(f"   ❌ No user_id in session, showing login page")
+    return render_template('login.html')
 
 @app.route('/api/auth/persistent-login', methods=['POST'])
 def persistent_login():
@@ -340,6 +338,39 @@ def get_persistent_token():
     except Exception as e:
         print(f"❌ Error getting persistent token: {e}")
         return jsonify({'token': None}), 200
+
+@app.route('/api/auth/verify-token', methods=['POST'])
+def verify_token():
+    """Verify persistent token and return user info"""
+    try:
+        data = request.get_json()
+        token = data.get('token')
+
+        if not token:
+            return jsonify({'authenticated': False}), 200
+
+        user = User.query.filter_by(persistent_token=token).first()
+
+        if not user or not user.is_active:
+            return jsonify({'authenticated': False}), 200
+
+        # Update last login
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            'authenticated': True,
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'name': user.name,
+                'picture': user.picture
+            }
+        }), 200
+
+    except Exception as e:
+        print(f"❌ Error verifying token: {e}")
+        return jsonify({'authenticated': False}), 200
 
 @app.route('/api/dashboard/stats')
 @login_required
