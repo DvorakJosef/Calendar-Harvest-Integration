@@ -149,20 +149,32 @@
 
         // Check authentication on page load
         async function checkAuthenticationOnPageLoad() {
+            console.log('='.repeat(70));
+            console.log('🔍 BASE.HTML AUTHENTICATION CHECK - Page: {{ request.path }}');
+            console.log('='.repeat(70));
+            console.log('📋 State:');
+            console.log('   - AUTH_TOKEN from server:', AUTH_TOKEN ? AUTH_TOKEN.substring(0, 20) + '...' : 'None');
+
+            const storedToken = localStorage.getItem('persistent_token');
+            console.log('   - Stored token:', storedToken ? storedToken.substring(0, 20) + '...' : 'None');
+            console.log('='.repeat(70));
+
             // If we have auth_token from the server, we're authenticated
             if (AUTH_TOKEN && AUTH_TOKEN !== 'None') {
-                console.log('✅ Auth token from server, user authenticated');
+                console.log('✅ Auth token from server, storing in localStorage');
                 localStorage.setItem('persistent_token', AUTH_TOKEN);
+                console.log('✅ Token stored successfully');
                 return;
             }
 
             // Check localStorage for persistent token
-            const storedToken = localStorage.getItem('persistent_token');
             if (!storedToken) {
-                console.log('No token found, redirecting to login');
+                console.log('❌ No token found in localStorage, redirecting to login');
                 window.location.href = '/';
                 return;
             }
+
+            console.log('🔄 Token found in localStorage, verifying...');
 
             // Verify token is still valid
             try {

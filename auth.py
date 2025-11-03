@@ -21,8 +21,31 @@ def login_required(f):
     """Decorator to require user authentication (PyWebView compatible)"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # DIAGNOSTIC LOGGING
+        print(f"\n{'='*70}")
+        print(f"🔐 AUTH CHECK: {request.method} {request.path}")
+        print(f"{'='*70}")
+        print(f"📋 Session Data:")
+        print(f"   - user_id in session: {'user_id' in session}")
+        print(f"   - user_id value: {session.get('user_id', 'None')}")
+        print(f"   - session keys: {list(session.keys())}")
+        print(f"   - session permanent: {session.permanent}")
+        print(f"\n🔑 Token Sources:")
+        query_token = request.args.get('token')
+        print(f"   - Query param token: {query_token[:20] + '...' if query_token else 'None'}")
+        auth_header = request.headers.get('Authorization', '')
+        print(f"   - Authorization header: {auth_header[:30] + '...' if auth_header else 'None'}")
+        print(f"\n🍪 Cookie Data:")
+        cookie_header = request.headers.get('Cookie', '')
+        print(f"   - Cookie header: {cookie_header[:80] + '...' if len(cookie_header) > 80 else cookie_header if cookie_header else 'None'}")
+        print(f"\n📡 Request Info:")
+        print(f"   - User-Agent: {request.headers.get('User-Agent', 'None')[:50]}...")
+        print(f"   - Referer: {request.headers.get('Referer', 'None')}")
+        print(f"{'='*70}\n")
+
         # Check if user is in session
         if 'user_id' in session:
+            print(f"✅ AUTH SUCCESS: User authenticated via session (user_id: {session.get('user_id')})\n")
             return f(*args, **kwargs)
 
         # For PyWebView compatibility, check for token in query params
@@ -38,7 +61,10 @@ def login_required(f):
                 session.permanent = True
                 user.last_login = datetime.utcnow()
                 db.session.commit()
+                print(f"✅ AUTH SUCCESS: User authenticated via query token (user: {user.email})\n")
                 return f(*args, **kwargs)
+            else:
+                print(f"❌ AUTH FAILED: Invalid or inactive token in query params\n")
 
         # Check for token in localStorage (passed via header or query param)
         # The frontend will need to pass it as a header or query param
@@ -55,8 +81,12 @@ def login_required(f):
                 session.permanent = True
                 user.last_login = datetime.utcnow()
                 db.session.commit()
+                print(f"✅ AUTH SUCCESS: User authenticated via Authorization header (user: {user.email})\n")
                 return f(*args, **kwargs)
+            else:
+                print(f"❌ AUTH FAILED: Invalid or inactive token in Authorization header\n")
 
+        print(f"❌ AUTH FAILED: No valid authentication found, redirecting to login\n")
         return redirect(url_for('auth.login'))
     return decorated_function
 

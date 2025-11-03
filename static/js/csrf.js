@@ -14,6 +14,8 @@ function setupCSRFProtection() {
     const originalFetch = window.fetch;
     
     window.fetch = function(url, options = {}) {
+        console.log('🌐 FETCH INTERCEPTED:', url);
+
         // Only add CSRF token for same-origin requests
         if (!url.startsWith('http') || url.startsWith(window.location.origin)) {
             // Initialize headers if not present
@@ -23,12 +25,17 @@ function setupCSRFProtection() {
 
             // Add persistent token from localStorage for PyWebView compatibility
             const persistentToken = localStorage.getItem('persistent_token');
+            console.log('   - Token from localStorage:', persistentToken ? persistentToken.substring(0, 20) + '...' : 'None');
+
             if (persistentToken) {
                 if (options.headers instanceof Headers) {
                     options.headers.set('Authorization', `Bearer ${persistentToken}`);
                 } else {
                     options.headers['Authorization'] = `Bearer ${persistentToken}`;
                 }
+                console.log('   - ✅ Authorization header added');
+            } else {
+                console.log('   - ⚠️  No token to add');
             }
 
             // Add CSRF token to POST, PUT, PATCH, DELETE requests

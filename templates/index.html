@@ -9,10 +9,33 @@
 
     // Check authentication on page load
     async function checkAuthentication() {
+        console.log('='.repeat(70));
+        console.log('🔍 DASHBOARD AUTHENTICATION CHECK');
+        console.log('='.repeat(70));
+        console.log('📋 Initial State:');
+        console.log('   - AUTH_TOKEN from server:', AUTH_TOKEN ? AUTH_TOKEN.substring(0, 20) + '...' : 'None');
+        console.log('   - localStorage available:', typeof(Storage) !== "undefined");
+
+        // Test localStorage
+        try {
+            localStorage.setItem('test_key', 'test_value');
+            const testValue = localStorage.getItem('test_key');
+            console.log('   - localStorage test:', testValue === 'test_value' ? '✅ WORKS' : '❌ FAILED');
+            localStorage.removeItem('test_key');
+        } catch (e) {
+            console.log('   - localStorage test: ❌ ERROR -', e.message);
+        }
+
+        const storedToken = localStorage.getItem('persistent_token');
+        console.log('   - Stored token in localStorage:', storedToken ? storedToken.substring(0, 20) + '...' : 'None');
+        console.log('   - All localStorage keys:', Object.keys(localStorage));
+        console.log('='.repeat(70));
+
         // If we have auth_token from the server, we're authenticated
         if (AUTH_TOKEN && AUTH_TOKEN !== 'None') {
-            console.log('✅ Auth token from server, user authenticated');
+            console.log('✅ Auth token from server, storing in localStorage');
             localStorage.setItem('persistent_token', AUTH_TOKEN);
+            console.log('✅ Token stored. Verifying:', localStorage.getItem('persistent_token') ? 'SUCCESS' : 'FAILED');
             // Clean up URL to remove token
             window.history.replaceState({}, document.title, window.location.pathname);
             // Load dashboard data
