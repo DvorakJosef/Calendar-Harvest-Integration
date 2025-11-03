@@ -662,16 +662,16 @@ def harvest_oauth_callback():
 
         if error:
             print(f"❌ OAuth error: {error}")
-            return redirect(url_for('setup') + f'?error=oauth_error&message={error}')
+            return redirect(url_for('setup', token=user.persistent_token, error='oauth_error', message=error))
 
         if not code or not state:
-            return redirect(url_for('setup') + '?error=missing_parameters')
+            return redirect(url_for('setup', token=user.persistent_token, error='missing_parameters'))
 
         # Verify state parameter
         stored_state = session.get('harvest_oauth_state')
         if not stored_state or stored_state != state:
             print(f"❌ OAuth state mismatch: stored={stored_state}, received={state}")
-            return redirect(url_for('setup') + '?error=state_mismatch')
+            return redirect(url_for('setup', token=user.persistent_token, error='state_mismatch'))
 
         # Clear state from session
         session.pop('harvest_oauth_state', None)
@@ -712,13 +712,15 @@ def harvest_oauth_callback():
         print(f"   Harvest User: {token_data.get('harvest_user_email')}")
         print(f"   Harvest Account: {token_data.get('harvest_account_name')}")
 
-        return redirect(url_for('setup') + '?success=harvest_connected')
+        # Redirect back to setup with token for PyWebView compatibility
+        return redirect(url_for('setup', token=user.persistent_token, success='harvest_connected'))
 
     except Exception as e:
         print(f"❌ OAuth callback error: {e}")
         if MONITORING_ENABLED:
             manual_log_activity(user.id, user.email, "HARVEST_OAUTH_CALLBACK", "/auth/harvest/callback", False, {"error": str(e)})
-        return redirect(url_for('setup') + f'?error=oauth_failed&message={str(e)}')
+        # Redirect back to setup with token for PyWebView compatibility
+        return redirect(url_for('setup', token=user.persistent_token, error='oauth_failed', message=str(e)))
 
 @app.route('/api/harvest/oauth/status')
 @login_required

@@ -577,8 +577,15 @@ function loadWizardSteps() {
 
 // OAuth 2.0 Functions
 function connectHarvestOAuth() {
-    // Redirect to OAuth authorization endpoint
-    window.location.href = '/auth/harvest';
+    // Get token from localStorage for PyWebView compatibility
+    const token = localStorage.getItem('persistent_token');
+    if (token) {
+        // Redirect to OAuth authorization endpoint with token
+        window.location.href = `/auth/harvest?token=${token}`;
+    } else {
+        console.error('No authentication token found');
+        CalendarHarvestApp.showError('Authentication required. Please refresh the page.');
+    }
 }
 
 
