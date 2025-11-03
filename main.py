@@ -255,10 +255,12 @@ def index():
 
     # Check for token in query params (for PyWebView compatibility)
     token = request.args.get('token')
-    if token and 'user_id' not in session:
-        print(f"   Found token in query params, attempting to restore session...")
+    if token:
+        print(f"   Found token in query params, validating...")
         user = User.query.filter_by(persistent_token=token).first()
         if user and user.is_active:
+            print(f"   ✅ Token valid for user: {user.email}")
+            # Store token in session for this request
             session['user_id'] = user.id
             session['user_email'] = user.email
             session['user_name'] = user.name
@@ -266,9 +268,10 @@ def index():
             session.permanent = True
             user.last_login = datetime.utcnow()
             db.session.commit()
-            print(f"   ✅ Session restored from token for user: {user.email}")
-            # Redirect without token to clean up URL
-            return redirect(url_for('index'))
+            # Render dashboard with token still in URL (PyWebView workaround)
+            return render_template('index.html')
+        else:
+            print(f"   ❌ Invalid token")
 
     if 'user_id' in session:
         print(f"   user_id value: {session.get('user_id')}")

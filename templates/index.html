@@ -6,11 +6,24 @@
 <script>
     // Check authentication on page load
     window.addEventListener('DOMContentLoaded', async function() {
-        const token = localStorage.getItem('persistent_token');
+        // Check if we have a token in the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlToken = urlParams.get('token');
+
+        // Check localStorage for persistent token
+        const storedToken = localStorage.getItem('persistent_token');
+        const token = urlToken || storedToken;
+
         if (!token) {
-            console.log('No persistent token found, redirecting to login');
+            console.log('No token found, redirecting to login');
             window.location.href = '/';
             return;
+        }
+
+        // If we have a URL token, store it in localStorage for future use
+        if (urlToken) {
+            localStorage.setItem('persistent_token', urlToken);
+            console.log('✅ Token stored in localStorage');
         }
 
         try {
@@ -26,6 +39,8 @@
                     console.log('Token verification failed, redirecting to login');
                     localStorage.removeItem('persistent_token');
                     window.location.href = '/';
+                } else {
+                    console.log('✅ Token verified, user authenticated');
                 }
             } else {
                 console.log('Token verification error, redirecting to login');
