@@ -21,6 +21,7 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
+    persistent_token = db.Column(db.String(255), unique=True)  # For persistent login
 
     # Relationships
     project_mappings = db.relationship('ProjectMapping', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -30,6 +31,12 @@ class User(db.Model):
 
     def __repr__(self):
         return f'<User {self.email}>'
+
+    def generate_persistent_token(self):
+        """Generate a persistent login token"""
+        import secrets
+        self.persistent_token = secrets.token_urlsafe(32)
+        return self.persistent_token
 
     def to_dict(self):
         return {

@@ -189,16 +189,31 @@ def callback():
             if not user:
                 return jsonify({'error': 'Failed to create user for calendar access'}), 500
         
+        # Generate persistent token for auto-login
+        if not user.persistent_token:
+            user.generate_persistent_token()
+            db.session.commit()
+
         # Log in user
         session['user_id'] = user.id
         session['user_email'] = user.email
         session['user_name'] = user.name
-        
+        session['persistent_token'] = user.persistent_token
+        session.permanent = True  # Make session persistent
+
         # Clear OAuth state
         session.pop('oauth_state', None)
-        
+
+        print(f"✅ User logged in: {user.email} (ID: {user.id})")
+        print(f"   Session user_id: {session.get('user_id')}")
+        print(f"   Session permanent: {session.permanent}")
+        print(f"   Persistent token: {user.persistent_token[:20]}...")
+
         flash(f'Welcome, {user.name}!', 'success')
-        return redirect(url_for('index'))
+
+        # For PyWebView compatibility, redirect with token as query param
+        # This ensures the token is available even if session cookies don't persist
+        return redirect(url_for('index', token=user.persistent_token))
         
     except Exception as e:
         print(f"OAuth callback error: {e}")

@@ -249,9 +249,97 @@ def validate_user_timesheet_access(user_id: int, operation: str) -> bool:
 @app.route('/')
 def index():
     """Main dashboard page"""
+    print(f"📍 Index route called")
+    print(f"   Session keys: {list(session.keys())}")
+    print(f"   user_id in session: {'user_id' in session}")
+
+    # Check for token in query params (for PyWebView compatibility)
+    token = request.args.get('token')
+    if token and 'user_id' not in session:
+        print(f"   Found token in query params, attempting to restore session...")
+        user = User.query.filter_by(persistent_token=token).first()
+        if user and user.is_active:
+            session['user_id'] = user.id
+            session['user_email'] = user.email
+            session['user_name'] = user.name
+            session['persistent_token'] = user.persistent_token
+            session.permanent = True
+            user.last_login = datetime.utcnow()
+            db.session.commit()
+            print(f"   ✅ Session restored from token for user: {user.email}")
+            # Redirect without token to clean up URL
+            return redirect(url_for('index'))
+
+    if 'user_id' in session:
+        print(f"   user_id value: {session.get('user_id')}")
+
     if 'user_id' not in session:
+        print(f"   ❌ No user_id in session, showing login page")
         return render_template('login.html')
+
+    print(f"   ✅ User authenticated, showing dashboard")
     return render_template('index.html')
+
+@app.route('/api/auth/persistent-login', methods=['POST'])
+def persistent_login():
+    """Handle persistent login using stored token"""
+    try:
+        data = request.get_json()
+        token = data.get('token')
+
+        if not token:
+            return jsonify({'success': False, 'error': 'No token provided'}), 400
+
+        # Find user by persistent token
+        user = User.query.filter_by(persistent_token=token).first()
+
+        if not user or not user.is_active:
+            print(f"❌ Invalid or inactive persistent token")
+            return jsonify({'success': False, 'error': 'Invalid token'}), 401
+
+        # Restore session
+        session['user_id'] = user.id
+        session['user_email'] = user.email
+        session['user_name'] = user.name
+        session['persistent_token'] = user.persistent_token
+        session.permanent = True
+
+        # Update last login
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+
+        print(f"✅ Persistent login successful for user: {user.email}")
+
+        return jsonify({
+            'success': True,
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'name': user.name
+            }
+        })
+
+    except Exception as e:
+        print(f"❌ Persistent login error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/auth/get-persistent-token')
+def get_persistent_token():
+    """Get persistent token for currently logged in user"""
+    try:
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'token': None}), 200
+
+        user = User.query.get(user_id)
+        if user and user.persistent_token:
+            return jsonify({'token': user.persistent_token}), 200
+
+        return jsonify({'token': None}), 200
+
+    except Exception as e:
+        print(f"❌ Error getting persistent token: {e}")
+        return jsonify({'token': None}), 200
 
 @app.route('/api/dashboard/stats')
 @login_required

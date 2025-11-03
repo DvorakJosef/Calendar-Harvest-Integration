@@ -142,6 +142,29 @@
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 
+    <!-- Persistent Login Script -->
+    <script>
+        // Store persistent token in localStorage when user is logged in
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if we have a persistent token in the session (via a hidden element or API call)
+            fetch('/api/auth/get-persistent-token')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                })
+                .then(data => {
+                    if (data && data.token) {
+                        localStorage.setItem('persistent_token', data.token);
+                        console.log('✅ Persistent token stored in localStorage');
+                    }
+                })
+                .catch(error => {
+                    // Silently fail - user might not be logged in
+                });
+        });
+    </script>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>
