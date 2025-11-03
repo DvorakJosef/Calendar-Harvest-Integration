@@ -22,7 +22,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Set Flask environment for desktop app
-os.environ['FLASK_ENV'] = 'desktop'
+# Use 'development' to load .env.development configuration
+os.environ['FLASK_ENV'] = 'development'
 
 # Load environment variables
 env_file = '.env.development'
