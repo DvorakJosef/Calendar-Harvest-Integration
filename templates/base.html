@@ -144,25 +144,56 @@
 
     <!-- Persistent Login Script -->
     <script>
-        // Store persistent token in localStorage when user is logged in
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if we have a persistent token in the session (via a hidden element or API call)
-            fetch('/api/auth/get-persistent-token')
-                .then(response => {
-                    if (response.ok) {
-                        return response.json();
-                    }
-                })
-                .then(data => {
-                    if (data && data.token) {
-                        localStorage.setItem('persistent_token', data.token);
-                        console.log('✅ Persistent token stored in localStorage');
-                    }
-                })
-                .catch(error => {
-                    // Silently fail - user might not be logged in
+        // Store auth token from template if available
+        const AUTH_TOKEN = '{{ auth_token }}';
+
+        // Check authentication on page load
+        async function checkAuthenticationOnPageLoad() {
+            // If we have auth_token from the server, we're authenticated
+            if (AUTH_TOKEN && AUTH_TOKEN !== 'None') {
+                console.log('✅ Auth token from server, user authenticated');
+                localStorage.setItem('persistent_token', AUTH_TOKEN);
+                return;
+            }
+
+            // Check localStorage for persistent token
+            const storedToken = localStorage.getItem('persistent_token');
+            if (!storedToken) {
+                console.log('No token found, redirecting to login');
+                window.location.href = '/';
+                return;
+            }
+
+            // Verify token is still valid
+            try {
+                const response = await fetch('/api/auth/verify-token', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ token: storedToken })
                 });
-        });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (!data.authenticated) {
+                        console.log('Token verification failed, redirecting to login');
+                        localStorage.removeItem('persistent_token');
+                        window.location.href = '/';
+                    } else {
+                        console.log('✅ Token verified, user authenticated');
+                    }
+                } else {
+                    console.log('Token verification error, redirecting to login');
+                    localStorage.removeItem('persistent_token');
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Error verifying token:', error);
+                window.location.href = '/';
+            }
+        }
+
+        // Run authentication check on page load
+        document.addEventListener('DOMContentLoaded', checkAuthenticationOnPageLoad);
     </script>
 
     {% block extra_js %}{% endblock %}

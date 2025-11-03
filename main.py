@@ -402,17 +402,32 @@ def dashboard_stats():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+def _get_auth_token_for_template():
+    """Get auth token for template rendering (PyWebView compatibility)"""
+    # Check for token in query params
+    token = request.args.get('token')
+    if token:
+        return token
+
+    # Check session for persistent token
+    if 'persistent_token' in session:
+        return session.get('persistent_token')
+
+    return None
+
 @app.route('/setup')
 @login_required
 def setup():
     """Setup page for API credentials"""
-    return render_template('setup.html')
+    auth_token = _get_auth_token_for_template()
+    return render_template('setup.html', auth_token=auth_token)
 
 @app.route('/preview')
 @login_required
 def preview():
     """Preview page for manual timesheet review"""
-    return render_template('preview.html')
+    auth_token = _get_auth_token_for_template()
+    return render_template('preview.html', auth_token=auth_token)
 
 @app.route('/setup-wizard')
 @login_required
@@ -443,13 +458,15 @@ def mappings():
     """Project mappings configuration page"""
     user = get_current_user()
     mappings = ProjectMapping.query.filter_by(user_id=user.id, is_active=True).all()
-    return render_template('mappings.html', mappings=mappings)
+    auth_token = _get_auth_token_for_template()
+    return render_template('mappings.html', mappings=mappings, auth_token=auth_token)
 
 @app.route('/process')
 @login_required
 def process():
     """Week selection and processing page"""
-    return render_template('process.html')
+    auth_token = _get_auth_token_for_template()
+    return render_template('process.html', auth_token=auth_token)
 
 
 
