@@ -147,6 +147,31 @@
         // Store auth token from template if available
         const AUTH_TOKEN = '{{ auth_token }}';
 
+        // Add token to all navigation links
+        function addTokenToNavigationLinks() {
+            const token = localStorage.getItem('persistent_token');
+            if (!token) {
+                console.log('⚠️  No token to add to navigation links');
+                return;
+            }
+
+            console.log('🔗 Adding token to navigation links...');
+
+            // Get all navigation links
+            const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+            navLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && !href.includes('?token=') && !href.startsWith('http')) {
+                    // Add token as query parameter
+                    const separator = href.includes('?') ? '&' : '?';
+                    link.setAttribute('href', `${href}${separator}token=${token}`);
+                    console.log(`   - Updated link: ${href} → ${href}${separator}token=${token.substring(0, 20)}...`);
+                }
+            });
+
+            console.log('✅ Navigation links updated with token');
+        }
+
         // Check authentication on page load
         async function checkAuthenticationOnPageLoad() {
             console.log('='.repeat(70));
@@ -164,6 +189,8 @@
                 console.log('✅ Auth token from server, storing in localStorage');
                 localStorage.setItem('persistent_token', AUTH_TOKEN);
                 console.log('✅ Token stored successfully');
+                // Add token to navigation links
+                addTokenToNavigationLinks();
                 return;
             }
 
@@ -175,6 +202,8 @@
             }
 
             console.log('🔄 Token found in localStorage, verifying...');
+            // Add token to navigation links
+            addTokenToNavigationLinks();
 
             // Verify token is still valid
             try {
@@ -192,6 +221,8 @@
                         window.location.href = '/';
                     } else {
                         console.log('✅ Token verified, user authenticated');
+                        // Add token to navigation links
+                        addTokenToNavigationLinks();
                     }
                 } else {
                     console.log('Token verification error, redirecting to login');

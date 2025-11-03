@@ -36,6 +36,12 @@
             console.log('✅ Auth token from server, storing in localStorage');
             localStorage.setItem('persistent_token', AUTH_TOKEN);
             console.log('✅ Token stored. Verifying:', localStorage.getItem('persistent_token') ? 'SUCCESS' : 'FAILED');
+
+            // Add token to navigation links (defined in base.html)
+            if (typeof addTokenToNavigationLinks === 'function') {
+                addTokenToNavigationLinks();
+            }
+
             // Clean up URL to remove token
             window.history.replaceState({}, document.title, window.location.pathname);
             // Load dashboard data
@@ -68,6 +74,10 @@
                     window.location.href = '/';
                 } else {
                     console.log('✅ Token verified, user authenticated');
+                    // Add token to navigation links
+                    if (typeof addTokenToNavigationLinks === 'function') {
+                        addTokenToNavigationLinks();
+                    }
                     // Now check API status
                     checkApiStatus();
                     loadDashboardStats();
