@@ -5,7 +5,7 @@
 {% block extra_js %}
 <script>
     // Check authentication on page load
-    window.addEventListener('DOMContentLoaded', async function() {
+    async function checkAuthentication() {
         // Check if we have a token in the URL
         const urlParams = new URLSearchParams(window.location.search);
         const urlToken = urlParams.get('token');
@@ -41,6 +41,9 @@
                     window.location.href = '/';
                 } else {
                     console.log('✅ Token verified, user authenticated');
+                    // Now check API status
+                    checkApiStatus();
+                    loadDashboardStats();
                 }
             } else {
                 console.log('Token verification error, redirecting to login');
@@ -51,7 +54,80 @@
             console.error('Error verifying token:', error);
             window.location.href = '/';
         }
-    });
+    }
+
+    // Check API connection status on page load
+    function checkApiStatus() {
+        // Check Google Calendar status
+        fetch('/api/google/status')
+            .then(response => response.json())
+            .then(data => {
+                const googleStatus = document.getElementById('google-status');
+                if (data.connected) {
+                    googleStatus.innerHTML = '<i class="bi bi-check-circle"></i> Google Calendar: Connected';
+                    googleStatus.className = 'badge bg-success status-badge';
+                } else {
+                    googleStatus.innerHTML = '<i class="bi bi-x-circle"></i> Google Calendar: Not Connected';
+                    googleStatus.className = 'badge bg-secondary status-badge';
+                }
+            })
+            .catch(error => console.error('Error checking Google status:', error));
+
+        // Check Harvest status
+        fetch('/api/harvest/status')
+            .then(response => response.json())
+            .then(data => {
+                const harvestStatus = document.getElementById('harvest-status');
+                if (data.connected) {
+                    harvestStatus.innerHTML = '<i class="bi bi-check-circle"></i> Harvest: Connected';
+                    harvestStatus.className = 'badge bg-success status-badge';
+                } else {
+                    harvestStatus.innerHTML = '<i class="bi bi-x-circle"></i> Harvest: Not Connected';
+                    harvestStatus.className = 'badge bg-secondary status-badge';
+                }
+            })
+            .catch(error => console.error('Error checking Harvest status:', error));
+    }
+
+    function loadDashboardStats() {
+        fetch('/api/dashboard/stats')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update mappings count
+                    const mappingsCount = document.getElementById('mappings-count');
+                    if (data.mappings_count > 0) {
+                        mappingsCount.innerHTML = `<i class="bi bi-check-circle"></i> ${data.mappings_count} Mappings Configured`;
+                        mappingsCount.className = 'badge bg-success status-badge';
+                    } else {
+                        mappingsCount.innerHTML = '<i class="bi bi-list"></i> 0 Mappings Configured';
+                        mappingsCount.className = 'badge bg-secondary status-badge';
+                    }
+
+                    // Update last processed date
+                    const lastProcessed = document.getElementById('last-processed');
+                    if (data.last_processed_date) {
+                        lastProcessed.innerHTML = `<i class="bi bi-check-circle"></i> Last: ${data.last_processed_date}`;
+                        lastProcessed.className = 'badge bg-success status-badge';
+                    } else {
+                        lastProcessed.innerHTML = '<i class="bi bi-clock"></i> Never Processed';
+                        lastProcessed.className = 'badge bg-secondary status-badge';
+                    }
+                } else {
+                    console.error('Dashboard stats error:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading dashboard stats:', error);
+                // If user is not logged in, don't show error
+                if (error.message && error.message.includes('401')) {
+                    console.log('User not logged in, skipping dashboard stats');
+                }
+            });
+    }
+
+    // Run authentication check on page load
+    window.addEventListener('DOMContentLoaded', checkAuthentication);
 </script>
 {% endblock %}
 
@@ -198,83 +274,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-// Check API connection status on page load
-document.addEventListener('DOMContentLoaded', function() {
-    checkApiStatus();
-    loadDashboardStats();
-});
-
-function checkApiStatus() {
-    // Check Google Calendar status
-    fetch('/api/google/status')
-        .then(response => response.json())
-        .then(data => {
-            const googleStatus = document.getElementById('google-status');
-            if (data.connected) {
-                googleStatus.innerHTML = '<i class="bi bi-check-circle"></i> Google Calendar: Connected';
-                googleStatus.className = 'badge bg-success status-badge';
-            } else {
-                googleStatus.innerHTML = '<i class="bi bi-x-circle"></i> Google Calendar: Not Connected';
-                googleStatus.className = 'badge bg-secondary status-badge';
-            }
-        })
-        .catch(error => console.error('Error checking Google status:', error));
-
-    // Check Harvest status
-    fetch('/api/harvest/status')
-        .then(response => response.json())
-        .then(data => {
-            const harvestStatus = document.getElementById('harvest-status');
-            if (data.connected) {
-                harvestStatus.innerHTML = '<i class="bi bi-check-circle"></i> Harvest: Connected';
-                harvestStatus.className = 'badge bg-success status-badge';
-            } else {
-                harvestStatus.innerHTML = '<i class="bi bi-x-circle"></i> Harvest: Not Connected';
-                harvestStatus.className = 'badge bg-secondary status-badge';
-            }
-        })
-        .catch(error => console.error('Error checking Harvest status:', error));
-}
-
-function loadDashboardStats() {
-    fetch('/api/dashboard/stats')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Update mappings count
-                const mappingsCount = document.getElementById('mappings-count');
-                if (data.mappings_count > 0) {
-                    mappingsCount.innerHTML = `<i class="bi bi-check-circle"></i> ${data.mappings_count} Mappings Configured`;
-                    mappingsCount.className = 'badge bg-success status-badge';
-                } else {
-                    mappingsCount.innerHTML = '<i class="bi bi-list"></i> 0 Mappings Configured';
-                    mappingsCount.className = 'badge bg-secondary status-badge';
-                }
-
-                // Update last processed date
-                const lastProcessed = document.getElementById('last-processed');
-                if (data.last_processed_date) {
-                    lastProcessed.innerHTML = `<i class="bi bi-check-circle"></i> Last: ${data.last_processed_date}`;
-                    lastProcessed.className = 'badge bg-success status-badge';
-                } else {
-                    lastProcessed.innerHTML = '<i class="bi bi-clock"></i> Never Processed';
-                    lastProcessed.className = 'badge bg-secondary status-badge';
-                }
-            } else {
-                console.error('Dashboard stats error:', data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error loading dashboard stats:', error);
-            // If user is not logged in, don't show error
-            if (error.message && error.message.includes('401')) {
-                console.log('User not logged in, skipping dashboard stats');
-            }
-        });
-}
-</script>
 {% endblock %}
