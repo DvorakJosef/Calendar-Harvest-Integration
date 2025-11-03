@@ -13,37 +13,28 @@
         if (AUTH_TOKEN && AUTH_TOKEN !== 'None') {
             console.log('✅ Auth token from server, user authenticated');
             localStorage.setItem('persistent_token', AUTH_TOKEN);
+            // Clean up URL to remove token
+            window.history.replaceState({}, document.title, window.location.pathname);
             // Load dashboard data
             checkApiStatus();
             loadDashboardStats();
             return;
         }
 
-        // Check if we have a token in the URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlToken = urlParams.get('token');
-
         // Check localStorage for persistent token
         const storedToken = localStorage.getItem('persistent_token');
-        const token = urlToken || storedToken;
-
-        if (!token) {
+        if (!storedToken) {
             console.log('No token found, redirecting to login');
             window.location.href = '/';
             return;
         }
 
-        // If we have a URL token, store it in localStorage for future use
-        if (urlToken) {
-            localStorage.setItem('persistent_token', urlToken);
-            console.log('✅ Token stored in localStorage');
-        }
-
+        // Verify token is still valid
         try {
             const response = await fetch('/api/auth/verify-token', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ token: token })
+                body: JSON.stringify({ token: storedToken })
             });
 
             if (response.ok) {

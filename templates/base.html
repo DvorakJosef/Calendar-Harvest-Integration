@@ -59,22 +59,22 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('index') }}{% if auth_token %}?token={{ auth_token }}{% endif %}">
+                        <a class="nav-link" href="{{ url_for('index') }}">
                             <i class="bi bi-house"></i> Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('setup') }}{% if auth_token %}?token={{ auth_token }}{% endif %}">
+                        <a class="nav-link" href="{{ url_for('setup') }}">
                             <i class="bi bi-gear"></i> Setup
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('mappings') }}{% if auth_token %}?token={{ auth_token }}{% endif %}">
+                        <a class="nav-link" href="{{ url_for('mappings') }}">
                             <i class="bi bi-diagram-3"></i> Mappings
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('process') }}{% if auth_token %}?token={{ auth_token }}{% endif %}">
+                        <a class="nav-link" href="{{ url_for('process') }}">
                             <i class="bi bi-play-circle"></i> Process
                         </a>
                     </li>

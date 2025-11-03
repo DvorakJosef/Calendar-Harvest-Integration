@@ -16,15 +16,25 @@ function setupCSRFProtection() {
     window.fetch = function(url, options = {}) {
         // Only add CSRF token for same-origin requests
         if (!url.startsWith('http') || url.startsWith(window.location.origin)) {
+            // Initialize headers if not present
+            if (!options.headers) {
+                options.headers = {};
+            }
+
+            // Add persistent token from localStorage for PyWebView compatibility
+            const persistentToken = localStorage.getItem('persistent_token');
+            if (persistentToken) {
+                if (options.headers instanceof Headers) {
+                    options.headers.set('Authorization', `Bearer ${persistentToken}`);
+                } else {
+                    options.headers['Authorization'] = `Bearer ${persistentToken}`;
+                }
+            }
+
             // Add CSRF token to POST, PUT, PATCH, DELETE requests
             if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method.toUpperCase())) {
                 const token = getCSRFToken();
                 if (token) {
-                    // Initialize headers if not present
-                    if (!options.headers) {
-                        options.headers = {};
-                    }
-                    
                     // Add CSRF token header
                     if (options.headers instanceof Headers) {
                         options.headers.set('X-CSRFToken', token);
@@ -34,7 +44,7 @@ function setupCSRFProtection() {
                 }
             }
         }
-        
+
         return originalFetch.call(this, url, options);
     };
 }
