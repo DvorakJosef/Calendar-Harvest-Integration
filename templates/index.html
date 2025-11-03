@@ -4,8 +4,21 @@
 
 {% block extra_js %}
 <script>
+    // Store auth token from template
+    const AUTH_TOKEN = '{{ auth_token }}';
+
     // Check authentication on page load
     async function checkAuthentication() {
+        // If we have auth_token from the server, we're authenticated
+        if (AUTH_TOKEN && AUTH_TOKEN !== 'None') {
+            console.log('✅ Auth token from server, user authenticated');
+            localStorage.setItem('persistent_token', AUTH_TOKEN);
+            // Load dashboard data
+            checkApiStatus();
+            loadDashboardStats();
+            return;
+        }
+
         // Check if we have a token in the URL
         const urlParams = new URLSearchParams(window.location.search);
         const urlToken = urlParams.get('token');

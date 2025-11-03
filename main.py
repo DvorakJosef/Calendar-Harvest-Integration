@@ -269,14 +269,15 @@ def index():
             user.last_login = datetime.utcnow()
             db.session.commit()
             # Render dashboard with token still in URL (PyWebView workaround)
-            return render_template('index.html')
+            # Pass token to template so it can be used in API calls
+            return render_template('index.html', auth_token=token)
         else:
             print(f"   ❌ Invalid token")
 
     if 'user_id' in session:
         print(f"   user_id value: {session.get('user_id')}")
         print(f"   ✅ User authenticated, showing dashboard")
-        return render_template('index.html')
+        return render_template('index.html', auth_token=session.get('persistent_token'))
 
     print(f"   ❌ No user_id in session, showing login page")
     return render_template('login.html')
